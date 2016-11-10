@@ -21,20 +21,18 @@ OHIF.measurements.toggleLabelButton = options => {
         removeButtonView();
     }
 
-    const tool = toolMap[options.toolData.toolType];
+    const tool = options.measurementTypeId || toolMap[options.toolType];
     const toolCollection = options.measurementApi[tool];
-    const measurement = toolCollection.findOne(options.toolData._id);
+    const measurement = toolCollection.findOne(options.measurementId);
 
     const data = {
         measurement,
         position: options.position,
         threeColumns: true,
         hideCommon: true,
-        doneCallback(location, description) {
-            if (_.isFunction(options.callback)) {
-                options.callback(options, location, description);
-            }
-
+        autoClick: options.autoClick,
+        doneCallback: removeButtonView,
+        updateCallback(location, description) {
             toolCollection.update({
                 measurementNumber: measurement.measurementNumber,
                 toolType: measurement.toolType,
@@ -44,9 +42,9 @@ OHIF.measurements.toggleLabelButton = options => {
                     location,
                     description
                 }
+            }, {
+                multi: true
             });
-
-            removeButtonView();
         }
     };
     const view = Blaze.renderWithData(Template.measureFlow, data, options.element);

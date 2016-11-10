@@ -1,5 +1,6 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
+import { OHIF } from 'meteor/ohif:core';
 
 Template.caseProgress.onCreated(() => {
     const instance = Template.instance();
@@ -122,7 +123,14 @@ Template.caseProgress.helpers({
 });
 
 Template.caseProgress.events({
-    'click .js-finish-case'() {
+    'click .js-finish-case'(event) {
+        const $this = $(event.currentTarget);
+
+        // Stop here if the tool is disabled
+        if ($this.hasClass('disabled')) {
+            return;
+        }
+
         const instance = Template.instance();
         switchToTab('studylistTab');
         instance.data.measurementApi.storeMeasurements();

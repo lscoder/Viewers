@@ -31,12 +31,6 @@ Template.viewer.onCreated(() => {
         }
     });
 
-    // The hotkey can also be an array (e.g. ["NUMPAD0", "0"])
-    OHIF.viewer.defaultHotkeys = OHIF.viewer.defaultHotkeys || {};
-    OHIF.viewer.defaultHotkeys.toggleLesionTrackerTools = 'O';
-    OHIF.viewer.defaultHotkeys.bidirectional = 'T'; // Target
-    OHIF.viewer.defaultHotkeys.nonTarget = 'N'; // Non-target
-
     if (ViewerData[contentId].loadedSeriesData) {
         OHIF.log.info('Reloading previous loadedSeriesData');
         OHIF.viewer.loadedSeriesData = ViewerData[contentId].loadedSeriesData;
@@ -147,7 +141,8 @@ Template.viewer.events({
                 if (toolData.active) {
                     OHIF.measurements.toggleLabelButton({
                         instance,
-                        toolData,
+                        measurementId: toolData._id,
+                        toolType: toolData.toolType,
                         element,
                         measurementApi: instance.data.measurementApi,
                         position: data.currentPoints.page
