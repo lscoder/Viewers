@@ -192,6 +192,7 @@ Package.onUse(function(api) {
     api.export('isImage', 'client');
     api.export('sopClassDictionary', 'client');
     api.export('addMetaData', 'client');
+    api.export('hasMultipleFrames', 'client');
 
     // Viewer management objects
     api.export('toolManager', 'client');
@@ -231,4 +232,6 @@ Package.onUse(function(api) {
     api.export('clearTools', 'client');
     api.export('resetViewport', 'client');
     api.export('invert', 'client');
+    api.export('flipV', 'client');
+    api.export('flipH', 'client');
 });
