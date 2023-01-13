@@ -1,7 +1,7 @@
 import { utilities, metaData } from '@cornerstonejs/core';
 import OHIF, { DicomMetadataStore } from '@ohif/core';
 import getLabelFromDCMJSImportedToolData from './getLabelFromDCMJSImportedToolData';
-import { adapters } from 'dcmjs';
+import adapters from '@cornerstonejs/adapters';
 
 const { guid } = OHIF.utils;
 const { MeasurementReport, CORNERSTONE_3D_TAG } = adapters.Cornerstone3D;

@@ -1,4 +1,4 @@
-import { adapters } from 'dcmjs';
+import adapters from '@cornerstonejs/adapters';
 
 const cornerstoneAdapters = adapters.Cornerstone3D;
 
