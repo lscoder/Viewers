@@ -38,7 +38,8 @@ function PanelStudyBrowser({
   const [thumbnailImageSrcMap, setThumbnailImageSrcMap] = useState({});
   const isMounted = useRef(true);
 
-  const onDoubleClickThumbnailHandler = displaySetInstanceUID => {
+  /** Loads the selected display set handler */
+  const onLoadDisplaySetHandler = displaySetInstanceUID => {
     let updatedViewports = [];
     const viewportIndex = activeViewportIndex;
     try {
@@ -59,6 +60,13 @@ function PanelStudyBrowser({
 
     viewportGridService.setDisplaySetsForViewports(updatedViewports);
   };
+
+  const onLoadAndRedisplayHandler = displaySetInstanceUID => {
+    return onLoadDisplaySetHandler(displaySetInstanceUID);
+  };
+
+  const onClickThumbnailHandler = onLoadDisplaySetHandler;
+  const onDoubleClickThumbnailHandler = onLoadAndRedisplayHandler;
 
   // ~~ studyDisplayList
   useEffect(() => {
@@ -237,6 +245,7 @@ function PanelStudyBrowser({
       servicesManager={servicesManager}
       activeTabName={activeTabName}
       onDoubleClickThumbnail={onDoubleClickThumbnailHandler}
+      onClickThumbnail={onClickThumbnailHandler}
       activeDisplaySetInstanceUIDs={activeDisplaySetInstanceUIDs}
       expandedStudyInstanceUIDs={expandedStudyInstanceUIDs}
       onClickStudy={_handleStudyClick}
