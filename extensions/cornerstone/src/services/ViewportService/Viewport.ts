@@ -13,6 +13,7 @@ import {
 export type InitialImageOptions = {
   index?: number;
   preset?: JumpPresets;
+  priority?: boolean;
 };
 
 export type ViewportOptions = {
@@ -252,6 +253,10 @@ class ViewportInfo {
   }
 
   public getInitialImageOptions(): InitialImageOptions {
+    console.warn('>>>>> Viewport :: getInitialImageOptions ::', {
+      ...this.viewportOptions.initialImageOptions,
+    });
+
     return this.viewportOptions.initialImageOptions;
   }
 

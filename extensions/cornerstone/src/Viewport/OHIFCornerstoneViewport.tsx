@@ -408,6 +408,10 @@ const OHIFCornerstoneViewport = React.memo(props => {
           lutPresentationStore[presentationIds?.lutPresentationId],
       };
       console.log('Using presentations', presentations);
+      console.warn(
+        '>>>>> OHIFCornerstoneViewport :: presentations ::',
+        presentations
+      );
 
       cornerstoneViewportService.setViewportData(
         viewportIndex,

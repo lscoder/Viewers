@@ -47,6 +47,9 @@ function TrackedMeasurementsContextProvider(
 
       const uid = trackedMeasurements[0].uid;
 
+      console.warn(
+        '>>>>> TrackedMeasurementsContextProvider :: jumpToMeasurement call'
+      );
       measurementService.jumpToMeasurement(
         viewportGrid.activeViewportIndex,
         uid

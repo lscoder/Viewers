@@ -226,6 +226,11 @@ function ViewerViewportGrid(props) {
             }
           }
 
+          initialImageOptions.priority = true;
+          console.warn(
+            '>>>>> ViewportGrid :: jumpToMeasurement handler:: initialImageOptions ::',
+            initialImageOptions
+          );
           vp.viewportOptions['initialImageOptions'] = initialImageOptions;
         });
 

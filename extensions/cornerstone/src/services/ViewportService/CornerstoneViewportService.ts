@@ -193,6 +193,9 @@ class CornerstoneViewportService extends PubSubService
       delete properties.VOILUTFunction;
     }
     const initialImageIndex = csViewport.getCurrentImageIdIndex();
+    console.warn(
+      `>>>>> getPresentation :: initialImageIndex :: ${initialImageIndex}`
+    );
     const camera = csViewport.getCamera();
     return {
       presentationIds,
@@ -349,6 +352,7 @@ class CornerstoneViewportService extends PubSubService
     presentations: Presentations
   ): void {
     const displaySetOptions = viewportInfo.getDisplaySetOptions();
+    const initialImageOptions = viewportInfo.getInitialImageOptions();
 
     const {
       imageIds,
@@ -364,11 +368,21 @@ class CornerstoneViewportService extends PubSubService
 
     if (
       initialImageIndexToUse === undefined ||
-      initialImageIndexToUse === null
+      initialImageIndexToUse === null ||
+      initialImageOptions?.priority
     ) {
       initialImageIndexToUse =
         this._getInitialImageIndexForStackViewport(viewportInfo, imageIds) || 0;
+
+      // "priority" is a workaround just to make sure this is the root cause
+      if (initialImageOptions?.priority) {
+        initialImageOptions.priority = false;
+      }
     }
+
+    console.warn(
+      `>>>>> _setStackViewport :: initialImageIndexToUse :: ${initialImageIndexToUse}`
+    );
 
     const properties = { ...presentations.lutPresentation?.properties };
     if (!presentations.lutPresentation?.properties) {
