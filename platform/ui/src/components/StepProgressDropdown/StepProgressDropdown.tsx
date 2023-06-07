@@ -1,4 +1,5 @@
 import React, {
+  ReactNode,
   useEffect,
   useCallback,
   useState,
@@ -7,14 +8,32 @@ import React, {
 } from 'react';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
-import { Icon } from '../';
-import './StepProgressDropdown.css';
+import { Icon, Tooltip } from '../';
 
-const StepProgressStatus = ({ max, value }) => {
+const MAX_TOOLTIP_LENGTH = 250;
+const DROPDOWN_OPTION_PROPTYPE = PropTypes.shape({
+  label: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
+  info: PropTypes.string,
+  activated: PropTypes.bool,
+  completed: PropTypes.bool,
+  onSelect: PropTypes.func,
+});
+
+type StepProgressDropdownOption = {
+  label: string;
+  value: string;
+  info?: string;
+  activated: boolean;
+  completed: boolean;
+  onSelect: () => void;
+};
+
+const StepProgressStatus = ({ options }) => {
   const items: JSX.Element[] = [];
 
-  for (let i = 1; i <= max; i++) {
-    const completed = i <= value;
+  for (let i = 0; i < options.length; i++) {
+    const { activated, completed } = options[i];
 
     items.push(
       <div
@@ -22,7 +41,8 @@ const StepProgressStatus = ({ max, value }) => {
         className={classnames(
           'h-1 grow mr-1 last:mr-0 first:rounded-l-sm last:rounded-r-sm',
           {
-            'bg-black': !completed,
+            'bg-black': !activated && !completed,
+            'bg-primary-main': activated && !completed,
             'bg-primary-light': completed,
           }
         )}
@@ -34,91 +54,131 @@ const StepProgressStatus = ({ max, value }) => {
 };
 
 StepProgressStatus.propTypes = {
-  max: PropTypes.number.isRequired,
-  value: PropTypes.number.isRequired,
+  options: PropTypes.arrayOf(DROPDOWN_OPTION_PROPTYPE).isRequired,
 };
 
-const StepProgressDropdownItem = ({
-  label,
-  value,
-  info,
-  completed,
-  onSelect,
-}) => {
+const StepProgressDropdownItemContent = ({ option }) => {
+  const { label, info, completed } = option;
+  const [truncate, setTruncate] = useState(true);
+  const handleOnHideTooltip = () => setTruncate(true);
   let icon;
-  let showInfoTooltip = false;
 
   if (completed) {
     icon = 'status-tracked';
   } else if (info) {
     icon = 'launch-info';
-    showInfoTooltip = true;
   }
 
-  const handleInfoIconClick = useCallback(event => {
-    console.log('>>>>> handleInfoIconClick ::', event);
-    // event.preventDefault();
-    event.stopPropagation();
-  }, []);
+  const tooltipText = useMemo(() => {
+    if (!truncate || !info || info.length <= MAX_TOOLTIP_LENGTH) {
+      return info;
+    }
+
+    const handleReadMoreClick = e => {
+      setTruncate(false);
+      e.stopPropagation();
+      e.preventDefault();
+    };
+
+    return (
+      <>
+        {info.substr(0, MAX_TOOLTIP_LENGTH)}
+        <button
+          className="text-primary-active font-bold"
+          onClick={handleReadMoreClick}
+        >
+          &nbsp;Read more...
+        </button>
+      </>
+    );
+  }, [info, truncate]);
+
+  const iconClassNames =
+    'grow-0 text-primary-light h-4 w-4 mt-1 mr-2 mb-0 ml-1';
+
+  const iconContent = (
+    <>
+      {icon && <Icon name={icon} className={iconClassNames} />}
+      {!icon && <div className={iconClassNames} />}
+    </>
+  );
 
   return (
-    // <div
-    //   key={value}
-    //   className={classnames(
-    //     'flex px-4 py-2 cursor-pointer items-center hover:bg-secondary-main',
-    //     'transition duration-300 border-b last:border-b-0 border-secondary-main'
-    //   )}
-    //   onClick={() => onSelect()}
-    // >
-    //   {!!icon && <Icon name={icon} className="w-4 mr-2 text-white" />}
-    //   <Typography>{label}</Typography>
-    // </div>
+    <>
+      {info && (
+        <Tooltip
+          content={tooltipText}
+          position="bottom-left"
+          tooltipBoxClassName={'max-w-xs'}
+          onHide={handleOnHideTooltip}
+        >
+          {iconContent}
+        </Tooltip>
+      )}
+      {!info && iconContent}
+
+      <div className="grow text-base leading-6">{label}</div>
+    </>
+  );
+};
+
+StepProgressDropdownItemContent.propTypes = {
+  option: DROPDOWN_OPTION_PROPTYPE.isRequired,
+};
+
+const StepProgressDropdownItem = ({ option, onSelect }) => {
+  const { value } = option;
+
+  return (
     <div
       key={value}
-      className="flex py-1 cursor-pointer hover:bg-secondary-main transition duration-1000"
-      onClick={() => onSelect()}
+      className={
+        'flex py-1 cursor-pointer hover:bg-secondary-main transition duration-1000'
+      }
+      onClick={() => onSelect(option)}
     >
-      <Icon
-        name={icon}
-        onClick={showInfoTooltip ? handleInfoIconClick : undefined}
-        className="grow-0 text-primary-light h-4 w-4 mt-1 mr-2 mb-0 ml-1"
-      />
-      <div className="grow text-base leading-6">{label}</div>
+      <StepProgressDropdownItemContent option={option} />
     </div>
   );
 };
 
-StepProgressDropdownItem.defaultProps = {
-  info: '',
-};
-
 StepProgressDropdownItem.propTypes = {
-  value: PropTypes.string.isRequired,
-  label: PropTypes.string.isRequired,
-  info: PropTypes.string,
-  completed: PropTypes.bool.isRequired,
-  onSelect: PropTypes.func.isRequired,
+  option: DROPDOWN_OPTION_PROPTYPE.isRequired,
+  onSelect: PropTypes.func,
 };
 
-const StepProgressDropdown = ({ id, options, value, children, onChange }) => {
-  const [selectedOption, setSelectedOption] = useState(
-    value && options.find(option => option.value === value)
+const StepProgressDropdown = ({
+  options: optionsProps,
+  value,
+  children,
+  onChange,
+}: {
+  options: StepProgressDropdownOption[];
+  value?: string;
+  children?: ReactNode;
+  onChange?: ({ selectedOption: StepProgressDropdownOption }) => void;
+}): JSX.Element => {
+  const element = useRef(null);
+  const [open, setOpen] = useState(false);
+  const toggleOptions = () => setOpen(s => !s);
+  const [options, setOptions] = useState(optionsProps);
+
+  const getSelectedOption = useCallback(
+    () => (value ? options.find(option => option.value === value) : undefined),
+    [options, value]
   );
-  const selectedOptionIndex = useMemo(() => options.indexOf(selectedOption), [
-    options,
-    selectedOption,
-  ]);
-  const [selectedOptions, setSelectedOptions] = useState(
-    selectedOption ? [selectedOption.value] : []
+
+  const [selectedOption, setSelectedOption] = useState(getSelectedOption());
+
+  const selectedOptionIndex = useMemo(
+    () => options.findIndex(option => option.value === selectedOption?.value),
+    [options, selectedOption]
   );
+
   const canMoveNext = useMemo(() => selectedOptionIndex < options.length - 1, [
     selectedOptionIndex,
     options,
   ]);
-
-  const [open, setOpen] = useState(false);
-  const element = useRef(null);
-  const toggleOptions = () => setOpen(s => !s);
 
   const handleDocumentClick = e => {
     if (element.current && !element.current.contains(e.target)) {
@@ -127,7 +187,7 @@ const StepProgressDropdown = ({ id, options, value, children, onChange }) => {
   };
 
   const handleSelectedOption = useCallback(
-    newSelectedOption => {
+    (newSelectedOption?: StepProgressDropdownOption): void => {
       setOpen(false);
 
       if (newSelectedOption?.value === selectedOption?.value) {
@@ -136,22 +196,16 @@ const StepProgressDropdown = ({ id, options, value, children, onChange }) => {
 
       setSelectedOption(newSelectedOption);
 
-      if (
-        newSelectedOption &&
-        !selectedOptions.includes(newSelectedOption.value)
-      ) {
-        setSelectedOptions([...selectedOptions, newSelectedOption.value]);
-      }
-
-      if (newSelectedOption?.onSelect) {
-        newSelectedOption.onSelect();
+      if (newSelectedOption) {
+        newSelectedOption.activated = true;
+        newSelectedOption.onSelect?.();
       }
 
       if (onChange) {
         onChange({ selectedOption: newSelectedOption });
       }
     },
-    [selectedOption, selectedOptions, onChange]
+    [selectedOption, onChange]
   );
 
   const handleNextButtonClick = useCallback(() => {
@@ -161,7 +215,15 @@ const StepProgressDropdown = ({ id, options, value, children, onChange }) => {
   }, [options, selectedOptionIndex, canMoveNext, handleSelectedOption]);
 
   useEffect(() => {
-    const newOption = value && options.find(option => option.value === value);
+    setOptions(optionsProps);
+    setSelectedOption(getSelectedOption());
+  }, [optionsProps, getSelectedOption]);
+
+  useEffect(() => {
+    const newOption = value
+      ? options.find(option => option.value === value)
+      : undefined;
+
     handleSelectedOption(newOption);
   }, [options, selectedOption, value, handleSelectedOption]);
 
@@ -178,14 +240,11 @@ const StepProgressDropdown = ({ id, options, value, children, onChange }) => {
           }
         )}
       >
-        {options.map((item, index) => (
+        {options.map((option, index) => (
           <StepProgressDropdownItem
             key={index}
-            value={item.value}
-            label={item.label}
-            info={item.info}
-            completed={selectedOptions.includes(item.value)}
-            onSelect={() => handleSelectedOption(item)}
+            option={option}
+            onSelect={() => handleSelectedOption(option)}
           />
         ))}
       </div>
@@ -209,13 +268,13 @@ const StepProgressDropdown = ({ id, options, value, children, onChange }) => {
             onClick={toggleOptions}
           >
             <div className="flex grow">
-              <Icon
-                name="status-tracked"
-                className="grow-0 text-primary-light h-4 w-4 mt-1 mr-2 mb-0 ml-1"
-              />
-              <div className="grow text-base leading-6">
-                {selectedOption ? selectedOption.label : children}
-              </div>
+              {selectedOption && (
+                <StepProgressDropdownItemContent option={selectedOption} />
+              )}
+
+              {!selectedOption && (
+                <div className="grow text-base leading-6 ml-1">{children}</div>
+              )}
             </div>
             <Icon
               name="chevron-down"
@@ -241,10 +300,7 @@ const StepProgressDropdown = ({ id, options, value, children, onChange }) => {
         </div>
         {renderOptions()}
         <div>
-          <StepProgressStatus
-            max={options.length}
-            value={selectedOptionIndex + 1}
-          />
+          <StepProgressStatus options={options} />
         </div>
       </div>
     </div>
@@ -252,20 +308,12 @@ const StepProgressDropdown = ({ id, options, value, children, onChange }) => {
 };
 
 StepProgressDropdown.defaultProps = {
-  // showDropdownIcon: true,
+  value: '',
 };
 
 StepProgressDropdown.propTypes = {
-  id: PropTypes.string,
-  children: PropTypes.node.isRequired,
-  // showDropdownIcon: PropTypes.bool,
-  options: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      icon: PropTypes.string,
-      onSelect: PropTypes.func,
-    })
-  ).isRequired,
+  children: PropTypes.node,
+  options: PropTypes.arrayOf(DROPDOWN_OPTION_PROPTYPE).isRequired,
   value: PropTypes.string,
   onChange: PropTypes.func,
 };
