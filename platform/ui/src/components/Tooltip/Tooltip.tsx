@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
 import { useTranslation } from 'react-i18next';
@@ -35,11 +35,18 @@ const Tooltip = ({
   isSticky,
   position,
   className,
+  tooltipBoxClassName,
   tight,
   children,
   isDisabled,
+  onHide,
 }) => {
   const [isActive, setIsActive] = useState(false);
+  const isOpen = useMemo(() => (isSticky || isActive) && !isDisabled, [
+    isSticky,
+    isActive,
+    isDisabled,
+  ]);
   const { t } = useTranslation('Buttons');
 
   const handleMouseOver = () => {
@@ -54,7 +61,11 @@ const Tooltip = ({
     }
   };
 
-  const isOpen = (isSticky || isActive) && !isDisabled;
+  useEffect(() => {
+    if (!isOpen && onHide) {
+      onHide();
+    }
+  }, [isOpen, onHide]);
 
   return (
     <div
@@ -77,7 +88,8 @@ const Tooltip = ({
             'relative tooltip-box bg-primary-dark border border-secondary-light text-white text-base rounded inset-x-auto top-full w-max-content',
             {
               'py-1 px-4': !tight,
-            }
+            },
+            tooltipBoxClassName
           )}
         >
           {typeof content === 'string' ? t(content) : content}
@@ -118,6 +130,8 @@ Tooltip.propTypes = {
   tight: PropTypes.bool,
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
+  tooltipBoxClassName: PropTypes.string,
+  onHide: PropTypes.func,
 };
 
 export default Tooltip;

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { StepProgressDropdown } from '@ohif/ui';
+import React, { useEffect, useState, useCallback } from 'react';
+import StepProgressDropdownWithService from './StepProgressDropdownWithService';
 
 const styles = {
   panel: {
@@ -63,26 +63,6 @@ function WorkflowPanel({ servicesManager }) {
     );
   });
 
-  const menuOptions = useMemo(() => (
-    workflowStages.map(workflowStage => (
-      {
-        label: workflowStage.name,
-        value: workflowStage.id,
-        icon: 'info',
-        info: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.',
-      }
-    ))
-  ), [workflowStages]);
-
-  const handleDropdownChange = ({ selectedOption }) => {
-    if (!selectedOption) {
-      return;
-    }
-
-    const workflowStage = workflowStages.find(workflowStage => workflowStage.id === selectedOption.value);
-    handleStageSelected(workflowStage);
-  };
-
   return (
     <div data-cy={'workflow-panel'} style={styles.panel}>
       <div style={styles.title}>Workflow</div>
@@ -90,7 +70,7 @@ function WorkflowPanel({ servicesManager }) {
         { workflowStagesContent }
       </div>
       <div style={{ backgroundColor: '#041c4a', padding: '10px 5px' }}>
-        <StepProgressDropdown id="options" options={menuOptions} value={activeWorkflowStage?.id} onChange={handleDropdownChange}></StepProgressDropdown>
+        <StepProgressDropdownWithService servicesManager={servicesManager} />
       </div>
     </div>
   );
