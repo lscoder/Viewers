@@ -1,11 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import StepProgressDropdownWithService from './StepProgressDropdownWithService';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+// import StepProgressDropdownWithService from './StepProgressDropdownWithService';
 
 const styles = {
   panel: {
-    marginBottom: '10px'
+    marginBottom: '10px',
+    backgroundColor: '#041c4a',
+    padding: '10px 0'
   },
   title: {
+    marginBottom: '10px',
   },
   container: {
     fontSize: '12px',
@@ -20,57 +23,21 @@ const styles = {
   },
 }
 
-function WorkflowPanel({ servicesManager }) {
-  const { workflowStagesService } = servicesManager.services;
-  const [stages, setStages] = useState(workflowStagesService.stages);
-  const [activeStage, setActiveStage] = useState(workflowStagesService.activeStage);
+function WorkflowPanel({ servicesManager, extensionManager }) {
+  const StepProgressDropdownWithService = useMemo(() => {
+    const defaultComponents = extensionManager.getModuleEntry('@ohif/extension-default.customizationModule.default').value;
 
-  const handleStageSelected = useCallback((stage) => {
-    workflowStagesService.setActiveStage(stage.id);
-  }, [workflowStagesService]);
-
-  useEffect(() => {
-    const { unsubscribe } = workflowStagesService.subscribe(
-      workflowStagesService.EVENTS.STAGES_CHANGED,
-      () => setStages(workflowStagesService.stages)
-    );
-
-    return () => {
-      unsubscribe();
-    }
-  }, [servicesManager]);
-
-  useEffect(() => {
-    const { unsubscribe } = workflowStagesService.subscribe(
-      workflowStagesService.EVENTS.ACTIVE_STAGE_CHANGED,
-      () => setActiveStage(workflowStagesService.activeStage)
-    );
-
-    return () => {
-      unsubscribe();
-    }
-  }, [servicesManager]);
-
-  const stagesContent = stages.map(stage => {
-    return (
-      <div
-        key={stage.id}
-        onClick={() => handleStageSelected(stage)}
-        style={ stage.id === activeStage?.id ? styles.listItemSelected : styles.listItem }
-      >
-        { stage.id === activeStage?.id && '[' } { stage.name } { stage.id === activeStage?.id && ']' }
-      </div>
-    );
-  });
+    return defaultComponents.find(
+      component => component.id === 'stepProgressDropdownWithServiceComponent'
+    ).component;
+  }, []);
 
   return (
-    <div data-cy={'workflow-panel'} style={styles.panel}>
+    <div data-cy={'workflow-panel'} style={styles.panel} >
       <div style={styles.title}>Workflow</div>
-      <div style={styles.container}>
-        { stagesContent }
-      </div>
-      <div style={{ backgroundColor: '#041c4a', padding: '10px 5px' }}>
+      <div style={{ padding: '0 5px 10px' }}>
         <StepProgressDropdownWithService servicesManager={servicesManager} />
+        {/* <StepProgressDropdownWithService servicesManager={servicesManager} /> */}
       </div>
     </div>
   );
