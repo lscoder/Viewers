@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-// import StepProgressDropdownWithService from './StepProgressDropdownWithService';
+import React, { useMemo } from 'react';
 
 const styles = {
   panel: {
@@ -37,7 +36,6 @@ function WorkflowPanel({ servicesManager, extensionManager }) {
       <div style={styles.title}>Workflow</div>
       <div style={{ padding: '0 5px 10px' }}>
         <StepProgressDropdownWithService servicesManager={servicesManager} />
-        {/* <StepProgressDropdownWithService servicesManager={servicesManager} /> */}
       </div>
     </div>
   );

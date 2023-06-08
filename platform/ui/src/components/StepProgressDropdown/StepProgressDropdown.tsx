@@ -24,9 +24,9 @@ type StepProgressDropdownOption = {
   label: string;
   value: string;
   info?: string;
-  activated: boolean;
-  completed: boolean;
-  onSelect: () => void;
+  activated?: boolean;
+  completed?: boolean;
+  onSelect?: () => void;
 };
 
 const StepProgressStatus = ({ options }) => {
@@ -156,7 +156,7 @@ const StepProgressDropdown = ({
   options: StepProgressDropdownOption[];
   value?: string;
   children?: ReactNode;
-  onChange?: ({ selectedOption: StepProgressDropdownOption }) => void;
+  onChange?: ({ selectedOption }) => void;
 }): JSX.Element => {
   const element = useRef(null);
   const [open, setOpen] = useState(false);
@@ -186,14 +186,13 @@ const StepProgressDropdown = ({
     }
   };
 
-  const handleSelectedOption = useCallback(
+  const handleOptionSelected = useCallback(
     (newSelectedOption?: StepProgressDropdownOption): void => {
-      setOpen(false);
-
       if (newSelectedOption?.value === selectedOption?.value) {
         return;
       }
 
+      setOpen(false);
       setSelectedOption(newSelectedOption);
 
       if (newSelectedOption) {
@@ -210,9 +209,9 @@ const StepProgressDropdown = ({
 
   const handleNextButtonClick = useCallback(() => {
     if (canMoveNext) {
-      handleSelectedOption(options[selectedOptionIndex + 1]);
+      handleOptionSelected(options[selectedOptionIndex + 1]);
     }
-  }, [options, selectedOptionIndex, canMoveNext, handleSelectedOption]);
+  }, [options, selectedOptionIndex, canMoveNext, handleOptionSelected]);
 
   useEffect(() => {
     setOptions(optionsProps);
@@ -224,8 +223,8 @@ const StepProgressDropdown = ({
       ? options.find(option => option.value === value)
       : undefined;
 
-    handleSelectedOption(newOption);
-  }, [options, selectedOption, value, handleSelectedOption]);
+    handleOptionSelected(newOption, true);
+  }, [options, selectedOption, value, handleOptionSelected]);
 
   const renderOptions = () => {
     return (
@@ -244,7 +243,7 @@ const StepProgressDropdown = ({
           <StepProgressDropdownItem
             key={index}
             option={option}
-            onSelect={() => handleSelectedOption(option)}
+            onSelect={() => handleOptionSelected(option)}
           />
         ))}
       </div>
@@ -260,9 +259,9 @@ const StepProgressDropdown = ({
   }, [open]);
 
   return (
-    <div ref={element} style={{ fontSize: 0 }} className="relative">
+    <div ref={element} className="relative text-[0px]">
       <div>
-        <div className="flex mb-1.5" style={{ height: '26px' }}>
+        <div className="flex mb-1.5 h-[26px]">
           <div
             className="flex grow border border-primary-main rounded cursor-pointer"
             onClick={toggleOptions}
@@ -282,11 +281,10 @@ const StepProgressDropdown = ({
             />
           </div>
           <button
-            className={classnames('text-base rounded ml-1.5', {
+            className={classnames('text-base rounded w-[26px] ml-1.5', {
               'bg-primary-main': canMoveNext,
               'bg-primary-dark pointer-events-none': !canMoveNext,
             })}
-            style={{ width: '26px' }}
           >
             <Icon
               name="arrow-right"
@@ -312,10 +310,10 @@ StepProgressDropdown.defaultProps = {
 };
 
 StepProgressDropdown.propTypes = {
-  children: PropTypes.node,
   options: PropTypes.arrayOf(DROPDOWN_OPTION_PROPTYPE).isRequired,
   value: PropTypes.string,
   onChange: PropTypes.func,
+  children: PropTypes.node,
 };
 
 export default StepProgressDropdown;

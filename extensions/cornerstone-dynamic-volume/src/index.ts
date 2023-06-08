@@ -1,7 +1,6 @@
 import { id } from './id';
 import getPanelModule from './getPanelModule';
 import getHangingProtocolModule from './getHangingProtocolModule';
-import getCustomizationModule from './getCustomizationModule';
 import { cache } from '@cornerstonejs/core';
 
 /**
@@ -122,6 +121,4 @@ export default {
     commandsManager,
     extensionManager,
   }) => {},
-
-  getCustomizationModule
 };

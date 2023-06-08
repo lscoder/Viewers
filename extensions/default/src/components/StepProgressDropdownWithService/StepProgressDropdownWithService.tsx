@@ -86,11 +86,10 @@ function StepProgressDropdownWithService({
       unsubStagesChanged();
       unsubActiveStageChanged();
     };
-  }, [servicesManager, workflowStagesService]);
+  }, [servicesManager, workflowStagesService, activeStage]);
 
   return (
     <StepProgressDropdown
-      id="stepProgressDropdown"
       options={dropdownOptions}
       value={activeStage?.id}
       onChange={handleDropdownChange}
