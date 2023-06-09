@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
+import debounce from 'lodash.debounce';
 import { useTranslation } from 'react-i18next';
 
 import './tooltip.css';
@@ -39,6 +40,7 @@ const Tooltip = ({
   tight,
   children,
   isDisabled,
+  showHideDelay,
   onHide,
 }) => {
   const [isActive, setIsActive] = useState(false);
@@ -49,16 +51,24 @@ const Tooltip = ({
   ]);
   const { t } = useTranslation('Buttons');
 
+  const handleMouseOverDebounced = useMemo(
+    () => debounce(() => setIsActive(true), showHideDelay),
+    [showHideDelay]
+  );
+
+  const handleMouseOutDebounced = useMemo(
+    () => debounce(() => setIsActive(false), showHideDelay),
+    [showHideDelay]
+  );
+
   const handleMouseOver = () => {
-    if (!isActive) {
-      setIsActive(true);
-    }
+    handleMouseOutDebounced.cancel();
+    handleMouseOverDebounced();
   };
 
   const handleMouseOut = () => {
-    if (isActive) {
-      setIsActive(false);
-    }
+    handleMouseOverDebounced.cancel();
+    handleMouseOutDebounced();
   };
 
   useEffect(() => {
@@ -112,6 +122,7 @@ Tooltip.defaultProps = {
   isSticky: false,
   position: 'bottom',
   isDisabled: false,
+  showHideDelay: 300,
 };
 
 Tooltip.propTypes = {
@@ -131,6 +142,7 @@ Tooltip.propTypes = {
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
   tooltipBoxClassName: PropTypes.string,
+  showHideDelay: PropTypes.number,
   onHide: PropTypes.func,
 };
 
