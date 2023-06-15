@@ -57,7 +57,7 @@ StepProgressStatus.propTypes = {
   options: PropTypes.arrayOf(DROPDOWN_OPTION_PROPTYPE).isRequired,
 };
 
-const StepProgressDropdownItemContent = ({ option }) => {
+const StepProgressDropdownItemContent = ({ option, debugEnabled }) => {
   const { label, info, completed } = option;
   const [truncate, setTruncate] = useState(true);
   const handleOnHideTooltip = () => setTruncate(true);
@@ -168,7 +168,9 @@ const StepProgressDropdown = ({
     [options, value]
   );
 
-  const [selectedOption, setSelectedOption] = useState(getSelectedOption());
+  const [selectedOption, setSelectedOption] = useState(() =>
+    getSelectedOption()
+  );
 
   const selectedOptionIndex = useMemo(
     () => options.findIndex(option => option.value === selectedOption?.value),
@@ -213,18 +215,24 @@ const StepProgressDropdown = ({
     }
   }, [options, selectedOptionIndex, canMoveNext, handleOptionSelected]);
 
+  // Update the options in case the options from props has changed
   useEffect(() => {
     setOptions(optionsProps);
     setSelectedOption(getSelectedOption());
   }, [optionsProps, getSelectedOption]);
 
+  // Updates the selected item based on the value from props
   useEffect(() => {
+    if (!value) {
+      return;
+    }
+
     const newOption = value
       ? options.find(option => option.value === value)
       : undefined;
 
-    handleOptionSelected(newOption, true);
-  }, [options, selectedOption, value, handleOptionSelected]);
+    handleOptionSelected(newOption);
+  }, [value, options, handleOptionSelected]);
 
   const renderOptions = () => {
     return (
@@ -259,16 +267,19 @@ const StepProgressDropdown = ({
   }, [open]);
 
   return (
-    <div ref={element} className="relative text-[0px]">
+    <div ref={element} className="grow text-white relative text-[0px]">
       <div>
         <div className="flex mb-1.5 h-[26px]">
           <div
-            className="flex grow border border-primary-main rounded cursor-pointer"
+            className="flex grow border bg-secondary-dark border-primary-main rounded cursor-pointer"
             onClick={toggleOptions}
           >
             <div className="flex grow">
               {selectedOption && (
-                <StepProgressDropdownItemContent option={selectedOption} />
+                <StepProgressDropdownItemContent
+                  option={selectedOption}
+                  debugEnabled={true}
+                />
               )}
 
               {!selectedOption && (
@@ -303,10 +314,6 @@ const StepProgressDropdown = ({
       </div>
     </div>
   );
-};
-
-StepProgressDropdown.defaultProps = {
-  value: '',
 };
 
 StepProgressDropdown.propTypes = {

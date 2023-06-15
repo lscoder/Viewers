@@ -10,10 +10,15 @@ export const argTypes = {
 <Meta title="Components/StepProgressDropdown" component={StepProgressDropdown} />
 
 export const StepProgressDropdownTemplate = args => (
-  <div className="h-32 mb-2.5 bg-secondary-dark text-white max-w-xs" style={{ border: 'solid 1px #f00' }} >
+  <div className="flex h-60 mb-2.5 max-w-xs">
     <StepProgressDropdown {...args} />
   </div>
 );
+
+export const loremIpsumText = new Array(7)
+  .join(` Lorem ipsum, dolor sit amet consectetur adipisicing elit`)
+  .substring(1);
+
 
 <Heading title="StepProgressDropdown" componentRelativePath="StepProgressDropdown/StepProgressDropdown.tsx" />
 
@@ -41,17 +46,19 @@ Dropdown is a modal Dropdown component which enabled to show a modal Dropdown.
 
 ## Usage
 
-You can list the items in the dropdown.
+You can list the items in the dropdown. The status of each item changes from
+black to dark blue in the status bar beneath the dropdown when the item is selected.
 
 <Canvas>
   <Story
     name="StepProgressDropdownList"
+    onChange={ selectedItem => selectedItem.completed = true }
     args={{
-      children: '[select an item]',
       options: [
         {
           label: 'Item 1',
           value: 'item1',
+          info: `Item 1 - ${loremIpsumText}`,
           onClick: () => {
             alert('Item 1 clicked');
           },
@@ -59,8 +66,24 @@ You can list the items in the dropdown.
         {
           label: 'Item 2',
           value: 'item2',
+          info: `Item 2 - ${loremIpsumText}`,
           onClick: () => {
             alert('Item 2 clicked');
+          },
+        },
+        {
+          label: 'Item 3',
+          value: 'item3',
+          info: `Item 3 - ${loremIpsumText}`,
+          onClick: () => {
+            alert('Item 3 clicked');
+          },
+        },
+        {
+          label: 'Item 4',
+          info: `Item 4 - ${loremIpsumText}`,
+          onClick: () => {
+            alert('Item 4 clicked');
           },
         },
       ],

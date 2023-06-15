@@ -7,13 +7,14 @@ const loremIpsum = new Array(7)
   .join(` Lorem ipsum, dolor sit amet consectetur adipisicing elit`)
   .substring(1);
 
-const stagesToDropdownOptions = (stages = []) => {
-  return stages.map(stage => ({
+const stagesToDropdownOptions = (stages = []) =>
+  stages.map(stage => ({
     label: stage.name,
     value: stage.id,
     info: `${stage.name.toUpperCase()} information text. ${loremIpsum}`,
+    activated: false,
+    completed: false,
   }));
-};
 
 function StepProgressDropdownWithService({
   servicesManager,
@@ -21,29 +22,37 @@ function StepProgressDropdownWithService({
   servicesManager: ServicesManager;
 }): ReactElement {
   const { workflowStagesService } = servicesManager.services;
-  const [stages, setStages] = useState(workflowStagesService.workflowStages);
-  const [activeStage, setActiveStage] = useState(
-    workflowStagesService.activeWorkflowStage
+  const [activeStageId, setActiveStageId] = useState(
+    workflowStagesService.activeWorkflowStage?.id
   );
+
   const [dropdownOptions, setDropdownOptions] = useState(
     stagesToDropdownOptions(workflowStagesService.workflowStages)
   );
 
-  const setSelectedOptionAsCompleted = useCallback(selectedOption => {
-    if (!selectedOption || selectedOption.completed) {
+  const setCurrentAndPreviousOptionsAsCompleted = useCallback(currentOption => {
+    if (currentOption.completed) {
       return;
     }
 
     setDropdownOptions(prevOptions => {
       const newOptionsState = [...prevOptions];
-      const optionIndex = newOptionsState.findIndex(
-        option => option.value === selectedOption.value
+      const startIndex = newOptionsState.findIndex(
+        option => option.value === currentOption.value
       );
 
-      newOptionsState[optionIndex] = {
-        ...selectedOption,
-        completed: true,
-      };
+      for (let i = startIndex; i >= 0; i--) {
+        const option = newOptionsState[i];
+
+        if (option.completed) {
+          break;
+        }
+
+        newOptionsState[i] = {
+          ...option,
+          completed: true,
+        };
+      }
 
       return newOptionsState;
     });
@@ -55,43 +64,57 @@ function StepProgressDropdownWithService({
         return;
       }
 
-      // TODO: Stages should be marked as completed after user has completed some action when required (not implemented)
-      setSelectedOptionAsCompleted(selectedOption);
-
-      const stage = stages.find(stage => stage.id === selectedOption.value);
-      workflowStagesService.setActiveWorkflowStage(stage.id);
+      // TODO: Stages should be marked as completed after user has
+      // completed some action when required (not implemented)
+      setCurrentAndPreviousOptionsAsCompleted(selectedOption);
+      setActiveStageId(selectedOption.value);
     },
-    [stages, workflowStagesService, setSelectedOptionAsCompleted]
+    [setCurrentAndPreviousOptionsAsCompleted]
   );
 
   useEffect(() => {
-    const { unsubscribe: unsubStagesChanged } = workflowStagesService.subscribe(
+    let timeoutId;
+
+    if (activeStageId) {
+      // Give a little bit more time to update the UI since a method from
+      // Texture.js (create3DFilterableFromDataArray) is taking some to update
+      // the UI(eg: 600+ ms after moving from a 1x3 PET to a 2x3 PET/CT layout).
+      timeoutId = setTimeout(() => {
+        workflowStagesService.setActiveWorkflowStage(activeStageId);
+      }, 100);
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [activeStageId, workflowStagesService]);
+
+  useEffect(() => {
+    const {
+      unsubscribe: unsubStagesChanged,
+    } = workflowStagesService.subscribe(
       workflowStagesService.EVENTS.STAGES_CHANGED,
-      () => {
-        setStages(workflowStagesService.workflowStages);
+      () =>
         setDropdownOptions(
           stagesToDropdownOptions(workflowStagesService.workflowStages)
-        );
-      }
+        )
     );
 
     const {
       unsubscribe: unsubActiveStageChanged,
     } = workflowStagesService.subscribe(
       workflowStagesService.EVENTS.ACTIVE_STAGE_CHANGED,
-      () => setActiveStage(workflowStagesService.activeWorkflowStage)
+      () => setActiveStageId(workflowStagesService.activeWorkflowStage.id)
     );
 
     return () => {
       unsubStagesChanged();
       unsubActiveStageChanged();
     };
-  }, [servicesManager, workflowStagesService, activeStage]);
+  }, [servicesManager, workflowStagesService]);
 
   return (
     <StepProgressDropdown
       options={dropdownOptions}
-      value={activeStage?.id}
+      value={activeStageId}
       onChange={handleDropdownChange}
     />
   );
