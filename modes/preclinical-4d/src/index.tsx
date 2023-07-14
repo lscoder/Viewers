@@ -9,6 +9,7 @@ const extensionDependencies = {
   '@ohif/extension-default': '3.7.0-beta.27',
   '@ohif/extension-cornerstone': '3.7.0-beta.27',
   '@ohif/extension-cornerstone-dynamic-volume': '3.7.0-beta.27',
+  '@ohif/extension-cornerstone-dicom-seg': '3.7.0-beta.27',
 };
 
 const ohif = {
@@ -17,6 +18,21 @@ const ohif = {
   hangingProtocol: '@ohif/extension-default.hangingProtocolModule.default',
   leftPanel: '@ohif/extension-default.panelModule.seriesList',
   rightPanel: '@ohif/extension-default.panelModule.measure',
+};
+
+// const tracked = {
+//   measurements:
+//     '@ohif/extension-measurement-tracking.panelModule.trackedMeasurements',
+//   thumbnailList: '@ohif/extension-measurement-tracking.panelModule.seriesList',
+//   viewport:
+//     '@ohif/extension-measurement-tracking.viewportModule.cornerstone-tracked',
+// };
+
+const dicomSeg = {
+  sopClassHandler:
+    '@ohif/extension-cornerstone-dicom-seg.sopClassHandlerModule.dicom-seg',
+  viewport: '@ohif/extension-cornerstone-dicom-seg.viewportModule.dicom-seg',
+  panel: '@ohif/extension-cornerstone-dicom-seg.panelModule.panelSegmentation',
 };
 
 const dynamicVolume = {
@@ -62,6 +78,7 @@ function modeFactory({ modeConfiguration }) {
         'Crosshairs',
         'Pan',
         'RectangleROIStartEndThreshold',
+        'RectangleROIThreshold',
         'fusionPTColormap',
         'Cine',
       ]);
@@ -159,7 +176,8 @@ function modeFactory({ modeConfiguration }) {
             id: ohif.layout,
             props: {
               leftPanels: [dynamicVolume.leftPanel],
-              rightPanels: [ohif.rightPanel],
+              // rightPanels: [ohif.rightPanel],
+              rightPanels: [dicomSeg.panel /*, tracked.measurements */],
               rightPanelDefaultClosed: true,
               viewports: [
                 {

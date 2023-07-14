@@ -200,34 +200,47 @@ function _createPanToolButton() {
   };
 }
 
-function _createRectangleROIThreshold() {
+function _createRectangleROIStartEndThreshold() {
   return {
     id: 'RectangleROIStartEndThreshold',
     type: 'ohif.radioGroup',
     props: {
       type: 'tool',
       icon: 'tool-create-threshold',
-      label: 'Rectangle ROI Threshold',
+      label: 'Rectangle ROI Threshold (start/end)',
       commands: [
         ..._createCommands('setToolActive', 'RectangleROIStartEndThreshold', [
           ToolGroupIds.PT,
         ]),
-        {
-          commandName: 'displayNotification',
-          commandOptions: {
-            title: 'RectangleROI Threshold Tip',
-            text:
-              'RectangleROI Threshold tool should be used on PT Axial Viewport',
-            type: 'info',
-          },
-        },
-        {
-          commandName: 'setViewportActive',
-          commandOptions: {
-            viewportId: 'ptAXIAL',
-          },
-        },
+        // {
+        //   commandName: 'displayNotification',
+        //   commandOptions: {
+        //     title: 'RectangleROI Threshold Tip',
+        //     text:
+        //       'RectangleROI Threshold tool should be used on PT Axial Viewport',
+        //     type: 'info',
+        //   },
+        // },
+        // {
+        //   commandName: 'setViewportActive',
+        //   commandOptions: {
+        //     viewportId: 'ptAXIAL',
+        //   },
+        // },
       ],
+    },
+  };
+}
+
+function _createRectangleROIThreshold() {
+  return {
+    id: 'RectangleROIThreshold', // RectangleROIStartEndThreshold
+    type: 'ohif.radioGroup',
+    props: {
+      type: 'tool',
+      icon: 'tool-create-threshold',
+      label: 'Rectangle ROI Threshold',
+      commands: [..._createCommands('setToolActive', 'RectangleROIThreshold')],
     },
   };
 }
@@ -562,6 +575,7 @@ const toolbarButtons = [
   _createWindowLevelToolButton(),
   _createCrosshairsToolButton(),
   _createPanToolButton(),
+  _createRectangleROIStartEndThreshold(),
   _createRectangleROIThreshold(),
   _createFusionPTColormap(),
   _createCineToolbarButton(),

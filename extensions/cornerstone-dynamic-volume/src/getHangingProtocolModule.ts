@@ -420,10 +420,10 @@ const defaultProtocol = {
         layoutType: 'grid',
         properties: {
           rows: 1,
-          columns: 3,
+          columns: 1,
         },
       },
-      viewports: [...getPTViewports()],
+      viewports: [getPTViewports()[0]],
       createdDate: '2023-01-01T00:00:00.000Z',
     },
 

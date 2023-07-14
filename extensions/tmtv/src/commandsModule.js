@@ -376,6 +376,7 @@ const commandsModule = ({
       );
     },
     setStartSliceForROIThresholdTool: () => {
+      console.log('>>>>> setStartSliceForROIThresholdTool');
       const { viewport } = _getActiveViewportsEnabledElement();
       const { focalPoint, viewPlaneNormal } = viewport.getCamera();
 

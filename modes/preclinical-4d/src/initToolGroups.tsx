@@ -5,6 +5,8 @@ const toolGroupIds = {
 };
 
 function _initToolGroups(toolNames, Enums, toolGroupService, commandsManager) {
+  console.log('>>>>> _initToolGroups :: toolNames ::', toolNames);
+
   const tools = {
     active: [
       {
@@ -29,6 +31,7 @@ function _initToolGroups(toolNames, Enums, toolGroupService, commandsManager) {
       { toolName: toolNames.Probe },
       { toolName: toolNames.EllipticalROI },
       { toolName: toolNames.RectangleROI },
+      { toolName: toolNames.RectangleROIThreshold },
       { toolName: toolNames.StackScroll },
       { toolName: toolNames.Angle },
       { toolName: toolNames.CobbAngle },

@@ -149,6 +149,28 @@ export default function PanelSegmentation({
     return;
   };
 
+  const onSegmentationAdd = (...args) => {
+    console.log('>>>>> onSegmentationAdd ::', ...args);
+    // segmentationService.addSegment('test', 1);
+    // segmentationService.addOrUpdateSegmentation({
+    //   activeSegmentIndex: 1,
+    //   colorLUTIndex: 0,
+    //   cachedStats: Record<string, any>;
+    //   displaySetInstanceUID: string;
+    //   displayText?: string[];
+    //   id: string;
+    //   isActive: boolean;
+    //   isVisible: boolean;
+    //   label: string;
+    //   segmentCount: number;
+    //   segments: Array<Segment>;
+    //   segmentsLocked: Array<number>;
+    //   hydrated: false,
+    //   type: csToolsEnums.SegmentationRepresentations;
+    //   representationData: SegmentationRepresentationData;
+    // });
+  };
+
   const onSegmentDelete = (segmentationId, segmentIndex) => {
     // segmentationService.removeSegmentFromSegmentation(
     //   segmentationId,
@@ -191,10 +213,10 @@ export default function PanelSegmentation({
   return (
     <div className="flex flex-col flex-auto min-h-0 justify-between mt-1">
       {/* show segmentation table */}
-      {segmentations?.length ? (
+      {true || segmentations?.length ? (
         <SegmentationGroupTable
           title={t('Segmentations')}
-          showAddSegmentation={false}
+          showAddSegmentation={true}
           segmentations={segmentations}
           isMinimized={isMinimized}
           activeSegmentationId={selectedSegmentationId || ''}
@@ -204,6 +226,7 @@ export default function PanelSegmentation({
           onSegmentClick={onSegmentClick}
           onSegmentEdit={onSegmentEdit}
           onSegmentColorClick={onSegmentColorClick}
+          onSegmentationAdd={onSegmentationAdd}
           onSegmentDelete={onSegmentDelete}
           onToggleSegmentVisibility={onToggleSegmentVisibility}
           onToggleSegmentationVisibility={onToggleSegmentationVisibility}

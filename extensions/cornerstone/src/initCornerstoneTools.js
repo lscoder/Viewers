@@ -8,6 +8,7 @@ import {
   MIPJumpToClickTool,
   LengthTool,
   RectangleROITool,
+  RectangleROIThresholdTool,
   EllipticalROITool,
   CircleROITool,
   BidirectionalTool,
@@ -44,6 +45,7 @@ export default function initCornerstoneTools(configuration = {}) {
   addTool(MIPJumpToClickTool);
   addTool(LengthTool);
   addTool(RectangleROITool);
+  addTool(RectangleROIThresholdTool);
   addTool(EllipticalROITool);
   addTool(CircleROITool);
   addTool(BidirectionalTool);
@@ -87,6 +89,7 @@ const toolNames = {
   DragProbe: DragProbeTool.toolName,
   Probe: ProbeTool.toolName,
   RectangleROI: RectangleROITool.toolName,
+  RectangleROIThreshold: RectangleROIThresholdTool.toolName,
   EllipticalROI: EllipticalROITool.toolName,
   CircleROI: CircleROITool.toolName,
   Bidirectional: BidirectionalTool.toolName,
