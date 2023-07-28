@@ -10,6 +10,12 @@ const extensionDependencies = {
   '@ohif/extension-cornerstone': '3.7.0-beta.27',
   '@ohif/extension-cornerstone-dynamic-volume': '3.7.0-beta.27',
   '@ohif/extension-cornerstone-dicom-seg': '3.7.0-beta.27',
+  '@ohif/extension-tmtv': '3.7.0-beta.27',
+};
+
+const preclinical4d = {
+  hangingProtocol:
+    '@ohif/extension-cornerstone-dynamic-volume.hangingProtocolModule.default',
 };
 
 const ohif = {
@@ -20,24 +26,11 @@ const ohif = {
   rightPanel: '@ohif/extension-default.panelModule.measure',
 };
 
-// const tracked = {
-//   measurements:
-//     '@ohif/extension-measurement-tracking.panelModule.trackedMeasurements',
-//   thumbnailList: '@ohif/extension-measurement-tracking.panelModule.seriesList',
-//   viewport:
-//     '@ohif/extension-measurement-tracking.viewportModule.cornerstone-tracked',
-// };
-
-const dicomSeg = {
-  sopClassHandler:
-    '@ohif/extension-cornerstone-dicom-seg.sopClassHandlerModule.dicom-seg',
-  viewport: '@ohif/extension-cornerstone-dicom-seg.viewportModule.dicom-seg',
-  panel: '@ohif/extension-cornerstone-dicom-seg.panelModule.panelSegmentation',
-};
-
 const dynamicVolume = {
   leftPanel:
     '@ohif/extension-cornerstone-dynamic-volume.panelModule.dynamic-volume',
+  rightPanel:
+    '@ohif/extension-cornerstone-dynamic-volume.panelModule.ROISegmentation',
 };
 
 const cornerstone = {
@@ -77,10 +70,9 @@ function modeFactory({ modeConfiguration }) {
         'WindowLevel',
         'Crosshairs',
         'Pan',
-        'RectangleROIStartEndThreshold',
-        'RectangleROIThreshold',
         'fusionPTColormap',
         'Cine',
+        'SegmentationTools',
       ]);
     },
     onModeExit: ({ servicesManager }) => {
@@ -118,7 +110,7 @@ function modeFactory({ modeConfiguration }) {
           id: 'dataPreparation',
           name: 'Data Preparation',
           hangingProtocol: {
-            protocolId: 'default4D',
+            protocolId: preclinical4d.hangingProtocol,
             stageId: 'dataPreparation',
           },
         },
@@ -126,7 +118,7 @@ function modeFactory({ modeConfiguration }) {
           id: 'registration',
           name: 'Registration',
           hangingProtocol: {
-            protocolId: 'default4D',
+            protocolId: preclinical4d.hangingProtocol,
             stageId: 'registration',
           },
         },
@@ -134,7 +126,7 @@ function modeFactory({ modeConfiguration }) {
           id: 'review',
           name: 'Review',
           hangingProtocol: {
-            protocolId: 'default4D',
+            protocolId: preclinical4d.hangingProtocol,
             stageId: 'review',
           },
         },
@@ -142,7 +134,7 @@ function modeFactory({ modeConfiguration }) {
           id: 'roiQuantification',
           name: 'ROI Quantification',
           hangingProtocol: {
-            protocolId: 'default4D',
+            protocolId: preclinical4d.hangingProtocol,
             stageId: 'roiQuantification',
           },
         },
@@ -150,7 +142,7 @@ function modeFactory({ modeConfiguration }) {
           id: 'kineticAnalysis',
           name: 'Kinect Analysis',
           hangingProtocol: {
-            protocolId: 'default4D',
+            protocolId: preclinical4d.hangingProtocol,
             stageId: 'kinectAnalysis',
           },
         },
@@ -176,9 +168,8 @@ function modeFactory({ modeConfiguration }) {
             id: ohif.layout,
             props: {
               leftPanels: [dynamicVolume.leftPanel],
-              // rightPanels: [ohif.rightPanel],
-              rightPanels: [dicomSeg.panel /*, tracked.measurements */],
-              rightPanelDefaultClosed: true,
+              rightPanels: [dynamicVolume.rightPanel],
+              rightPanelDefaultClosed: false,
               viewports: [
                 {
                   namespace: cornerstone.viewport,
@@ -192,7 +183,7 @@ function modeFactory({ modeConfiguration }) {
     ],
     extensions: extensionDependencies,
     // Default protocol gets self-registered by default in the init
-    hangingProtocol: ['default4D'],
+    hangingProtocol: preclinical4d.hangingProtocol,
     // Order is important in sop class handlers when two handlers both use
     // the same sop class under different situations.  In that case, the more
     // general handler needs to come last.  For this case, the dicomvideo must

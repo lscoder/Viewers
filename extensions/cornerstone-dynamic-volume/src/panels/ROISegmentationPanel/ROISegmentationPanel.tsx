@@ -1,13 +1,22 @@
-import React, { useEffect, useState, useCallback, useReducer } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useReducer,
+  ReactElement,
+} from 'react';
 import PropTypes from 'prop-types';
+import { CommandsManager, ServicesManager } from '@ohif/core';
 import { SegmentationTable, Button, Icon } from '@ohif/ui';
-
+// import { utilities as cstUtils } from '@cornerstonejs/tools';
 import { useTranslation } from 'react-i18next';
+import BrushConfigurationWithServices from './BrushConfigurationWithServices';
 import segmentationEditHandler from './segmentationEditHandler';
-import ExportReports from './ExportReports';
-import ROIThresholdConfiguration, {
+// import ExportReports from './ExportReports';
+import RectangleROIStartEndThresholdConfiguration, {
   ROI_STAT,
-} from './ROIThresholdConfiguration';
+} from './RectangleROIStartEndThresholdConfiguration';
 
 const LOWER_CT_THRESHOLD_DEFAULT = -1024;
 const UPPER_CT_THRESHOLD_DEFAULT = 1024;
@@ -44,12 +53,54 @@ function reducer(state, action) {
   }
 }
 
-export default function PanelRoiThresholdSegmentation({
+function getToolsConfigInfo({ servicesManager, config, dispatch, runCommand }) {
+  const wrappedBrushConfigurationWithServices = () => (
+    <BrushConfigurationWithServices servicesManager={servicesManager} />
+  );
+
+  return {
+    CircularBrush: {
+      title: 'Circular Brush Configuration',
+      component: wrappedBrushConfigurationWithServices,
+    },
+    CircularEraser: {
+      title: 'Circular Eraser Configuration',
+      component: wrappedBrushConfigurationWithServices,
+    },
+    SphereBrush: {
+      title: 'Sphere Brush Configuration',
+      component: wrappedBrushConfigurationWithServices,
+    },
+    SphereEraser: {
+      title: 'Sphere Eraser Configuration',
+      component: wrappedBrushConfigurationWithServices,
+    },
+    ThresholdBrush: {
+      title: 'Threshold Brush Configuration',
+      component: wrappedBrushConfigurationWithServices,
+    },
+    RectangleROIStartEndThreshold: {
+      title: 'ROI Threshold Configuration',
+      component: () => (
+        <RectangleROIStartEndThresholdConfiguration
+          config={config}
+          dispatch={dispatch}
+          runCommand={runCommand}
+        />
+      ),
+    },
+  };
+}
+
+export default function ROISegmentationPanel({
   servicesManager,
   commandsManager,
-}) {
-  const { segmentationService } = servicesManager.services;
-
+}: {
+  servicesManager: ServicesManager;
+  commandsManager: CommandsManager;
+}): ReactElement {
+  const { toolService, segmentationService } = servicesManager.services;
+  const [activePrimaryTool, setActivePrimaryTool] = useState('');
   const { t } = useTranslation('PanelSUV');
   const [showConfig, setShowConfig] = useState(false);
   const [labelmapLoading, setLabelmapLoading] = useState(false);
@@ -57,6 +108,10 @@ export default function PanelRoiThresholdSegmentation({
   const [segmentations, setSegmentations] = useState(() =>
     segmentationService.getSegmentations()
   );
+  const showThresholdRunButton = [
+    'RectangleROIThreshold',
+    'RectangleROIStartEndThreshold',
+  ].includes(activePrimaryTool);
 
   const [config, dispatch] = useReducer(reducer, {
     strategy: DEFAULT_STRATEGY,
@@ -75,6 +130,12 @@ export default function PanelRoiThresholdSegmentation({
     },
     [commandsManager]
   );
+
+  const toolsConfigInfo = useMemo(
+    () => getToolsConfigInfo({ servicesManager, config, dispatch, runCommand }),
+    [servicesManager, config, runCommand]
+  );
+  const toolConfigInfo = toolsConfigInfo[activePrimaryTool];
 
   const handleTMTVCalculation = useCallback(() => {
     const tmtv = runCommand('calculateTMTV', { segmentations });
@@ -120,7 +181,13 @@ export default function PanelRoiThresholdSegmentation({
     );
 
     handleTMTVCalculation();
-  }, [selectedSegmentationId, config]);
+  }, [
+    selectedSegmentationId,
+    config,
+    handleTMTVCalculation,
+    runCommand,
+    segmentationService,
+  ]);
 
   /**
    * Update UI based on segmentation changes (added, removed, updated)
@@ -166,7 +233,7 @@ export default function PanelRoiThresholdSegmentation({
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [handleTMTVCalculation, segmentationService]);
 
   /**
    * Whenever the segmentations change, update the TMTV calculations
@@ -177,7 +244,18 @@ export default function PanelRoiThresholdSegmentation({
     }
 
     handleTMTVCalculation();
-  }, [segmentations, selectedSegmentationId]);
+  }, [segmentations, selectedSegmentationId, handleTMTVCalculation]);
+
+  useEffect(() => {
+    const { unsubscribe } = toolService.subscribe(
+      toolService.EVENTS.PRIMARY_TOOL_ACTIVATED,
+      ({ toolName }) => setActivePrimaryTool(toolName)
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [toolService]);
 
   return (
     <>
@@ -185,6 +263,7 @@ export default function PanelRoiThresholdSegmentation({
         <div className="overflow-x-hidden overflow-y-auto invisible-scrollbar">
           <div className="flex mx-4 my-4 mb-4 space-x-4">
             <Button
+              className="grow"
               onClick={() => {
                 setLabelmapLoading(true);
                 setTimeout(() => {
@@ -197,24 +276,28 @@ export default function PanelRoiThresholdSegmentation({
             >
               {labelmapLoading ? 'loading ...' : 'New Label'}
             </Button>
-            <Button onClick={handleROIThresholding}>Run</Button>
+            {showThresholdRunButton && (
+              <Button className="grow" onClick={handleROIThresholding}>
+                Run
+              </Button>
+            )}
           </div>
-          <div
-            className="flex items-center justify-around h-8 mb-2 border-t outline-none cursor-pointer select-none bg-secondary-dark first:border-0 border-secondary-light"
-            onClick={() => {
-              setShowConfig(!showConfig);
-            }}
-          >
-            <div className="px-4 text-base text-white">
-              {t('ROI Threshold Configuration')}
-            </div>
-          </div>
-          {showConfig && (
-            <ROIThresholdConfiguration
-              config={config}
-              dispatch={dispatch}
-              runCommand={runCommand}
-            />
+
+          {selectedSegmentationId && toolConfigInfo && (
+            <>
+              <div
+                className="flex items-center justify-around h-8 mb-2 border-t outline-none cursor-pointer select-none bg-secondary-dark first:border-0 border-secondary-light"
+                onClick={() => {
+                  setShowConfig(!showConfig);
+                }}
+              >
+                <div className="px-4 text-base text-white">
+                  {t(toolConfigInfo.title)}
+                </div>
+              </div>
+
+              {showConfig && <toolConfigInfo.component />}
+            </>
           )}
           {/* show segmentation table */}
           <div className="mt-4">
@@ -257,12 +340,12 @@ export default function PanelRoiThresholdSegmentation({
               <div className="text-white">{`${tmtvValue} mL`}</div>
             </div>
           ) : null}
-          <ExportReports
+          {/* <ExportReports
             segmentations={segmentations}
             tmtvValue={tmtvValue}
             config={config}
             commandsManager={commandsManager}
-          />
+          /> */}
         </div>
       </div>
       <div
@@ -287,19 +370,7 @@ export default function PanelRoiThresholdSegmentation({
   );
 }
 
-PanelRoiThresholdSegmentation.propTypes = {
-  commandsManager: PropTypes.shape({
-    runCommand: PropTypes.func.isRequired,
-  }),
-  servicesManager: PropTypes.shape({
-    services: PropTypes.shape({
-      segmentationService: PropTypes.shape({
-        getSegmentation: PropTypes.func.isRequired,
-        getSegmentations: PropTypes.func.isRequired,
-        toggleSegmentationVisibility: PropTypes.func.isRequired,
-        subscribe: PropTypes.func.isRequired,
-        EVENTS: PropTypes.object.isRequired,
-      }).isRequired,
-    }).isRequired,
-  }).isRequired,
+ROISegmentationPanel.propTypes = {
+  servicesManager: PropTypes.instanceOf(ServicesManager).isRequired,
+  commandsManager: PropTypes.instanceOf(CommandsManager).isRequired,
 };

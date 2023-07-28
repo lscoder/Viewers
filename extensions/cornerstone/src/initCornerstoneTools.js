@@ -21,6 +21,11 @@ import {
   MagnifyTool,
   CrosshairsTool,
   SegmentationDisplayTool,
+  RectangleScissorsTool,
+  SphereScissorsTool,
+  CircleScissorsTool,
+  BrushTool,
+  PaintFillTool,
   init,
   addTool,
   annotation,
@@ -57,6 +62,11 @@ export default function initCornerstoneTools(configuration = {}) {
   addTool(MagnifyTool);
   addTool(CrosshairsTool);
   addTool(SegmentationDisplayTool);
+  addTool(RectangleScissorsTool);
+  addTool(SphereScissorsTool);
+  addTool(CircleScissorsTool);
+  addTool(BrushTool);
+  addTool(PaintFillTool);
   addTool(ReferenceLinesTool);
   addTool(CalibrationLineTool);
   addTool(TrackballRotateTool);
@@ -99,6 +109,11 @@ const toolNames = {
   Magnify: MagnifyTool.toolName,
   Crosshairs: CrosshairsTool.toolName,
   SegmentationDisplay: SegmentationDisplayTool.toolName,
+  RectangleScissors: RectangleScissorsTool.toolName,
+  SphereScissors: SphereScissorsTool.toolName,
+  CircleScissors: CircleScissorsTool.toolName,
+  Brush: BrushTool.toolName,
+  PaintFill: PaintFillTool.toolName,
   ReferenceLines: ReferenceLinesTool.toolName,
   CalibrationLine: CalibrationLineTool.toolName,
   TrackballRotateTool: TrackballRotateTool.toolName,
