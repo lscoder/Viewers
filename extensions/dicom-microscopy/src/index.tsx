@@ -23,7 +23,7 @@ const MicroscopyViewport = props => {
 /**
  * You can remove any of the following modules if you don't need them.
  */
-export default {
+const test = {
   /**
    * Only required property. Should be a unique value across all extensions.
    * You ID can be anything you want, but it should be unique.
@@ -115,3 +115,5 @@ export default {
 
   getCommandsModule,
 };
+
+export default test;

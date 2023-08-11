@@ -23,6 +23,10 @@ const ohif = {
 };
 
 const dynamicVolume = {
+  sopClassHandler:
+    '@ohif/extension-cornerstone-dynamic-volume.sopClassHandlerModule.dynamic-volume',
+  viewport:
+    '@ohif/extension-cornerstone-dynamic-volume.viewportModule.chartViewport',
   leftPanel:
     '@ohif/extension-cornerstone-dynamic-volume.panelModule.dynamic-volume',
   rightPanel:
@@ -126,9 +130,13 @@ function modeFactory({ modeConfiguration }) {
               rightPanels: [],
               rightPanelDefaultClosed: true,
               viewports: [
+                // {
+                //   namespace: cornerstone.viewport,
+                //   displaySetsToDisplay: [ohif.sopClassHandler],
+                // },
                 {
-                  namespace: cornerstone.viewport,
-                  displaySetsToDisplay: [ohif.sopClassHandler],
+                  namespace: dynamicVolume.viewport,
+                  displaySetsToDisplay: [dynamicVolume.sopClassHandler],
                 },
               ],
             },
@@ -143,7 +151,8 @@ function modeFactory({ modeConfiguration }) {
     // the same sop class under different situations.  In that case, the more
     // general handler needs to come last.  For this case, the dicomvideo must
     // come first to remove video transfer syntax before ohif uses images
-    sopClassHandlers: [ohif.sopClassHandler],
+    // sopClassHandlers: [ohif.sopClassHandler],
+    sopClassHandlers: [dynamicVolume.sopClassHandler],
     hotkeys: [...hotkeys.defaults.hotkeyBindings],
   };
 }

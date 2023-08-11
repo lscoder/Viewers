@@ -1,0 +1,58 @@
+.LineChart svg {
+  color: #ddd;
+  border: solid 1px #383f42;
+}
+
+.LineChart svg .background {
+  stroke: none;
+  fill: #151c20;
+}
+
+.LineChart svg .axis.label {
+  fill: #ddd;
+  font-size: 12px;
+}
+
+.LineChart svg .axis .tick line {
+  stroke: #ddd;
+}
+
+.LineChart svg .axis .tick text {
+  fill: #ddd;
+}
+
+.LineChart svg .axis.grid .domain {
+  stroke: none;
+}
+
+.LineChart svg .axis.grid .tick line {
+  stroke: #383f42;
+}
+
+.LineChart svg .line {
+  stroke: #fff;
+  stroke-width: 1px;
+  fill: none;
+}
+
+.LineChart svg .dot {
+  stroke: #fff;
+  fill: #fff;
+}
+
+/* .LineChart svg .dot .interaction.peek {
+  fill: #f00;
+}
+
+.LineChart svg .dot .interaction.glomerular {
+  fill: #f00;
+}
+
+.LineChart svg .dot .interaction.line {
+  fill: #f00;
+}
+
+.LineChart svg .dot .interaction.dot {
+  stroke: #f00;
+  stroke-width: 3px;
+} */
