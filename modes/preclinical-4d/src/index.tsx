@@ -130,10 +130,10 @@ function modeFactory({ modeConfiguration }) {
               rightPanels: [],
               rightPanelDefaultClosed: true,
               viewports: [
-                // {
-                //   namespace: cornerstone.viewport,
-                //   displaySetsToDisplay: [ohif.sopClassHandler],
-                // },
+                {
+                  namespace: cornerstone.viewport,
+                  displaySetsToDisplay: [ohif.sopClassHandler],
+                },
                 {
                   namespace: dynamicVolume.viewport,
                   displaySetsToDisplay: [dynamicVolume.sopClassHandler],
@@ -152,7 +152,7 @@ function modeFactory({ modeConfiguration }) {
     // general handler needs to come last.  For this case, the dicomvideo must
     // come first to remove video transfer syntax before ohif uses images
     // sopClassHandlers: [ohif.sopClassHandler],
-    sopClassHandlers: [dynamicVolume.sopClassHandler],
+    sopClassHandlers: [dynamicVolume.sopClassHandler, ohif.sopClassHandler],
     hotkeys: [...hotkeys.defaults.hotkeyBindings],
   };
 }
