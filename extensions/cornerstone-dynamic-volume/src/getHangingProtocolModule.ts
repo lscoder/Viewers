@@ -276,6 +276,22 @@ function getFusionViewports() {
   ];
 }
 
+function getSeriesChartViewport() {
+  return {
+    viewportOptions: {
+      viewportId: 'seriesChart',
+    },
+    displaySets: [
+      {
+        id: 'chartDisplaySet',
+        options: {
+          skipLoading: true,
+        },
+      },
+    ],
+  };
+}
+
 const defaultProtocol = {
   id: 'default4D',
   locked: true,
@@ -389,6 +405,24 @@ const defaultProtocol = {
       // Can be used to select matching studies
       // studyMatchingRules: [],
     },
+    chartDisplaySet: {
+      // Unused currently
+      imageMatchingRules: [],
+      // Matches displaysets, NOT series
+      seriesMatchingRules: [
+        {
+          attribute: 'Modality',
+          constraint: {
+            equals: {
+              value: 'CHT',
+            },
+          },
+          required: true,
+        },
+      ],
+      // Can be used to select matching studies
+      // studyMatchingRules: [],
+    },
   },
   stages: [
     {
@@ -453,11 +487,38 @@ const defaultProtocol = {
       viewportStructure: {
         layoutType: 'grid',
         properties: {
-          rows: 1,
+          rows: 2,
           columns: 3,
+          layoutOptions: [
+            {
+              x: 0,
+              y: 0,
+              width: 1 / 3,
+              height: 1 / 2,
+            },
+            {
+              x: 1 / 3,
+              y: 0,
+              width: 1 / 3,
+              height: 1 / 2,
+            },
+            {
+              x: 2 / 3,
+              y: 0,
+              width: 1 / 3,
+              height: 1 / 2,
+            },
+            {
+              x: 0,
+              y: 1 / 2,
+              width: 1,
+              height: 1 / 2,
+            },
+          ],
         },
       },
-      viewports: [...getPTViewports()],
+      // viewports: [...getPTViewports()],
+      viewports: [...getPTViewports(), getSeriesChartViewport()],
       createdDate: '2023-01-01T00:00:00.000Z',
     },
   ],

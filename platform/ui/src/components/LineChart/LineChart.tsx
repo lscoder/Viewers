@@ -17,7 +17,8 @@ const LineChart = ({
   width: widthProp,
   height: heightProp,
   axis,
-  points,
+  // points,
+  series,
   showAxisLabels,
   showAxisGrid,
   transparentChartBackground,
@@ -60,16 +61,42 @@ const LineChart = ({
       return;
     }
 
-    const peekIndex = -1;
-    const glomerularIndex = -1;
+    const testSeries = [
+      {
+        label: 'series 1',
+        points: [
+          [0, 500],
+          [10, 700],
+          [20, 300],
+        ],
+      },
+      {
+        label: 'series 2',
+        points: [
+          [0, 800],
+          [10, 600],
+          [20, 1000],
+        ],
+      },
+      // {
+      //   label: 'series 3',
+      //   points: [
+      //     [0, 250],
+      //     [10, 900],
+      //     [20, 100],
+      //   ],
+      // },
+    ];
+
+    testSeries.forEach((curSeries, i) => {
+      console.log('>>>>> curSeries ::', curSeries);
+    });
 
     lineChart.addLineChartNode(
       d3SVGContainer,
-      () => console.log('>>>>> movingPointsCallback'),
       axis,
-      points,
-      peekIndex,
-      glomerularIndex,
+      // points,
+      series,
       width,
       height,
       showAxisLabels,
@@ -79,7 +106,8 @@ const LineChart = ({
   }, [
     d3SVGContainer,
     axis,
-    points,
+    // points,
+    series,
     width,
     height,
     showAxisLabels,
@@ -90,8 +118,7 @@ const LineChart = ({
   return (
     <div
       className={classnames(
-        'LineChart',
-        'text-white',
+        'LineChart text-white',
         {
           [`w-[${widthProp}px]`]: !!widthProp,
           [`h-[${heightProp}px]`]: !!heightProp,
@@ -104,7 +131,7 @@ const LineChart = ({
       )}
     >
       <div
-        id="__chartContainer"
+        id="chartContainer"
         ref={chartContainerRef}
         className={classnames('w-full h-full', chartContainerClassName)}
       ></div>

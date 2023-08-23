@@ -1,4 +1,5 @@
 import { CommandsManager } from '../../classes';
+import { ExtensionManager } from '../../extensions';
 import { ServicesManager } from '../../services';
 import { PubSubService } from '../_shared/pubSubServiceInterface';
 
@@ -77,18 +78,21 @@ export type WorkflowStep = {
 };
 
 class WorkflowStepsService extends PubSubService {
+  private _extensionManager: ExtensionManager;
   private _servicesManager: ServicesManager;
   private _commandsManager: CommandsManager;
   private _workflowSteps: WorkflowStep[];
   private _activeWorkflowStep: WorkflowStep;
 
   constructor(
+    extensionManager: ExtensionManager,
     commandsManager: CommandsManager,
     servicesManager: ServicesManager
   ) {
     super(EVENTS);
     this._workflowSteps = [];
     this._activeWorkflowStep = null;
+    this._extensionManager = extensionManager;
     this._commandsManager = commandsManager;
     this._servicesManager = servicesManager;
   }
@@ -180,6 +184,7 @@ class WorkflowStepsService extends PubSubService {
     }
 
     const appContext = {
+      extensionManager: this._extensionManager,
       servicesManager: this._servicesManager,
       commandsManager: this._commandsManager,
     };
@@ -210,8 +215,16 @@ class WorkflowStepsService extends PubSubService {
 
   public static REGISTRATION = {
     name: 'workflowStepsService',
-    create: ({ commandsManager, servicesManager }): WorkflowStepsService => {
-      return new WorkflowStepsService(commandsManager, servicesManager);
+    create: ({
+      extensionManager,
+      commandsManager,
+      servicesManager,
+    }): WorkflowStepsService => {
+      return new WorkflowStepsService(
+        extensionManager,
+        commandsManager,
+        servicesManager
+      );
     },
   };
 }

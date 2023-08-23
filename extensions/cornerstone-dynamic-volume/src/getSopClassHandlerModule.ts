@@ -1,186 +1,54 @@
-import { isImage } from '@ohif/core/src/utils/isImage';
+import { DicomMetadataStore, classes, utils } from '@ohif/core';
 import sopClassDictionary from '@ohif/core/src/utils/sopClassDictionary';
-import ImageSet from '@ohif/core/src/classes/ImageSet';
-import isDisplaySetReconstructable from '@ohif/core/src/utils/isDisplaySetReconstructable';
-import vtkMath from '@kitware/vtk.js/Common/Core/Math';
 
-import { utils } from '@ohif/core';
+import * as cs from '@cornerstonejs/core';
+import * as csTools from '@cornerstonejs/tools';
 
 import { SOPClassHandlerName, SOPClassHandlerId } from './id';
 
-const DEFAULT_VOLUME_LOADER_SCHEME = 'cornerstoneStreamingImageVolume';
-const DYNAMIC_VOLUME_LOADER_SCHEME = 'cornerstoneStreamingDynamicImageVolume';
+const { ImageSet, MetadataProvider: metadataProvider } = classes;
+const { utilities: csToolsUtils } = csTools;
 
-const sopClassUids = [
-  '1.2.3.4.5.6.7',
-  // sopClassDictionary.ComputedRadiographyImageStorage,
-  // sopClassDictionary.DigitalXRayImageStorageForPresentation,
-  // sopClassDictionary.DigitalXRayImageStorageForProcessing,
-  // sopClassDictionary.DigitalMammographyXRayImageStorageForPresentation,
-  // sopClassDictionary.DigitalMammographyXRayImageStorageForProcessing,
-  // sopClassDictionary.DigitalIntraOralXRayImageStorageForPresentation,
-  // sopClassDictionary.DigitalIntraOralXRayImageStorageForProcessing,
-  // sopClassDictionary.CTImageStorage,
-  // sopClassDictionary.EnhancedCTImageStorage,
-  // sopClassDictionary.LegacyConvertedEnhancedCTImageStorage,
-  // sopClassDictionary.UltrasoundMultiframeImageStorage,
-  // sopClassDictionary.MRImageStorage,
-  // sopClassDictionary.EnhancedMRImageStorage,
-  // sopClassDictionary.EnhancedMRColorImageStorage,
-  // sopClassDictionary.LegacyConvertedEnhancedMRImageStorage,
-  // sopClassDictionary.UltrasoundImageStorage,
-  // sopClassDictionary.UltrasoundImageStorageRET,
-  // sopClassDictionary.SecondaryCaptureImageStorage,
-  // sopClassDictionary.MultiframeSingleBitSecondaryCaptureImageStorage,
-  // sopClassDictionary.MultiframeGrayscaleByteSecondaryCaptureImageStorage,
-  // sopClassDictionary.MultiframeGrayscaleWordSecondaryCaptureImageStorage,
-  // sopClassDictionary.MultiframeTrueColorSecondaryCaptureImageStorage,
-  // sopClassDictionary.XRayAngiographicImageStorage,
-  // sopClassDictionary.EnhancedXAImageStorage,
-  // sopClassDictionary.XRayRadiofluoroscopicImageStorage,
-  // sopClassDictionary.EnhancedXRFImageStorage,
-  // sopClassDictionary.XRay3DAngiographicImageStorage,
-  // sopClassDictionary.XRay3DCraniofacialImageStorage,
-  // sopClassDictionary.BreastTomosynthesisImageStorage,
-  // sopClassDictionary.BreastProjectionXRayImageStorageForPresentation,
-  // sopClassDictionary.BreastProjectionXRayImageStorageForProcessing,
-  // sopClassDictionary.IntravascularOpticalCoherenceTomographyImageStorageForPresentation,
-  // sopClassDictionary.IntravascularOpticalCoherenceTomographyImageStorageForProcessing,
-  // sopClassDictionary.NuclearMedicineImageStorage,
-  // sopClassDictionary.VLEndoscopicImageStorage,
-  // sopClassDictionary.VideoEndoscopicImageStorage,
-  // sopClassDictionary.VLMicroscopicImageStorage,
-  // sopClassDictionary.VideoMicroscopicImageStorage,
-  // sopClassDictionary.VLSlideCoordinatesMicroscopicImageStorage,
-  // sopClassDictionary.VLPhotographicImageStorage,
-  // sopClassDictionary.VideoPhotographicImageStorage,
-  // sopClassDictionary.OphthalmicPhotography8BitImageStorage,
-  // sopClassDictionary.OphthalmicPhotography16BitImageStorage,
-  // sopClassDictionary.OphthalmicTomographyImageStorage,
-  // sopClassDictionary.VLWholeSlideMicroscopyImageStorage,
-  // sopClassDictionary.PositronEmissionTomographyImageStorage,
-  // sopClassDictionary.EnhancedPETImageStorage,
-  // sopClassDictionary.LegacyConvertedEnhancedPETImageStorage,
-  // sopClassDictionary.RTImageStorage,
-  // sopClassDictionary.EnhancedUSVolumeStorage,
-];
+const CHART_MODALITY = 'CHT';
+const LABELMAP = csTools.Enums.SegmentationRepresentations.Labelmap;
+const SegDataSOPClassUid = '1.9.451.13215.7.3.2.7.6.1';
+const SegSeriesInstanceUidTemplate =
+  '1.3.6.1.4.1.12842.1.1.14.4.{date}.{time}.435.{id}';
 
-const getDynamicVolumeInfo = (appContext, instances) => {
-  const { extensionManager } = appContext;
+const sopClassUids = [SegDataSOPClassUid];
 
-  if (!extensionManager) {
-    throw new Error('extensionManager is not available');
-  }
-
-  const imageIds = instances.map(({ imageId }) => imageId);
-  const volumeLoaderUtility = extensionManager.getModuleEntry(
-    '@ohif/extension-cornerstone.utilityModule.volumeLoader'
-  );
+const makeChartDataDisplaySet = (instance, sopClassUids) => {
   const {
-    getDynamicVolumeInfo: csGetDynamicVolumeInfo,
-  } = volumeLoaderUtility.exports;
-
-  return csGetDynamicVolumeInfo(imageIds);
-};
-
-const isMultiFrame = instance => {
-  return instance.NumberOfFrames > 1;
-};
-
-function getDisplaySetInfo(appContext, instances) {
-  const dynamicVolumeInfo = getDynamicVolumeInfo(appContext, instances);
-  const { isDynamicVolume, timePoints } = dynamicVolumeInfo;
-  let displaySetInfo;
-
-  if (isDynamicVolume) {
-    const timePoint = timePoints[0];
-    const instancesMap = new Map();
-
-    // O(n) to convert it into a map and O(1) to find each instance
-    instances.forEach(instance => instancesMap.set(instance.imageId, instance));
-
-    const firstTimePointInstances = timePoint.map(imageId =>
-      instancesMap.get(imageId)
-    );
-
-    displaySetInfo = isDisplaySetReconstructable(firstTimePointInstances);
-  } else {
-    displaySetInfo = isDisplaySetReconstructable(instances);
-  }
+    StudyInstanceUID,
+    SeriesInstanceUID,
+    SOPInstanceUID,
+    SeriesDescription,
+    SeriesNumber,
+    SeriesDate,
+    SOPClassUID,
+    chartData,
+  } = instance;
 
   return {
-    isDynamicVolume,
-    ...displaySetInfo,
-  };
-}
-
-const makeDisplaySet = (appContext, instances) => {
-  const instance = instances[0];
-  const imageSet = new ImageSet(instances);
-
-  const {
-    isDynamicVolume,
-    value: isReconstructable,
-    averageSpacingBetweenFrames,
-  } = getDisplaySetInfo(appContext, instances);
-
-  const volumeLoaderSchema = isDynamicVolume
-    ? DYNAMIC_VOLUME_LOADER_SCHEME
-    : DEFAULT_VOLUME_LOADER_SCHEME;
-
-  // set appropriate attributes to image set...
-  imageSet.setAttributes({
-    volumeLoaderSchema,
-    displaySetInstanceUID: imageSet.uid, // create a local alias for the imageSet UID
-    SeriesDate: instance.SeriesDate,
-    SeriesTime: instance.SeriesTime,
-    SeriesInstanceUID: instance.SeriesInstanceUID,
-    StudyInstanceUID: instance.StudyInstanceUID,
-    SeriesNumber: instance.SeriesNumber || 0,
-    FrameRate: instance.FrameTime,
-    SOPClassUID: instance.SOPClassUID,
-    SeriesDescription: instance.SeriesDescription || '',
-    Modality: instance.Modality,
-    isMultiFrame: isMultiFrame(instance),
-    countIcon: isReconstructable ? 'icon-mpr' : undefined,
-    numImageFrames: instances.length,
+    Modality: CHART_MODALITY,
+    loading: false,
+    isReconstructable: false,
+    displaySetInstanceUID: utils.guid(),
+    SeriesDescription,
+    SeriesNumber,
+    SeriesDate,
+    SOPInstanceUID,
+    SeriesInstanceUID,
+    StudyInstanceUID,
     SOPClassHandlerId,
-    isReconstructable,
-    averageSpacingBetweenFrames: averageSpacingBetweenFrames || null,
-  });
-
-  // Sort the images in this series if needed
-  const shallSort = true; //!OHIF.utils.ObjectPath.get(Meteor, 'settings.public.ui.sortSeriesByIncomingOrder');
-  if (shallSort) {
-    imageSet.sortBy((a, b) => {
-      // Sort by InstanceNumber (0020,0013)
-      return (
-        (parseInt(a.InstanceNumber) || 0) - (parseInt(b.InstanceNumber) || 0)
-      );
-    });
-  }
-
-  // Include the first image instance number (after sorted)
-  /*imageSet.setAttribute(
-    'instanceNumber',
-    imageSet.getImage(0).InstanceNumber
-  );*/
-
-  /*const isReconstructable = isDisplaySetReconstructable(series, instances);
-
-  imageSet.isReconstructable = isReconstructable.value;
-
-  if (isReconstructable.missingFrames) {
-    // TODO -> This is currently unused, but may be used for reconstructing
-    // Volumes with gaps later on.
-    imageSet.missingFrames = isReconstructable.missingFrames;
-  }*/
-
-  return imageSet;
-};
-
-const isSingleImageModality = modality => {
-  return modality === 'CR' || modality === 'MG' || modality === 'DX';
+    SOPClassUID,
+    isDerivedDisplaySet: true,
+    isLoaded: true,
+    sopClassUids,
+    instance,
+    instances: [instance],
+    chartData,
+  };
 };
 
 function getSopClassUids(instances) {
@@ -193,82 +61,281 @@ function getSopClassUids(instances) {
   return sopClassUids;
 }
 
-/**
- * Basic SOPClassHandler:
- * - For all Image types that are stackable, create
- *   a displaySet with a stack of images
- *
- * @param {SeriesMetadata} series The series metadata object from which the display sets will be created
- * @returns {Array} The list of display sets created for the given series object
- */
 function _getDisplaySetsFromSeries(appContext, instances) {
   // If the series has no instances, stop here
   if (!instances || !instances.length) {
     throw new Error('No instances were provided');
   }
 
-  const displaySets = [];
   const sopClassUids = getSopClassUids(instances);
-
-  // Search through the instances (InstanceMetadata object) of this series
-  // Split Multi-frame instances and Single-image modalities
-  // into their own specific display sets. Place the rest of each
-  // series into another display set.
-  const stackableInstances = [];
-  instances.forEach(instance => {
-    // All imaging modalities must have a valid value for sopClassUid (x00080016) or rows (x00280010)
-    if (!isImage(instance.SOPClassUID) && !instance.Rows) {
-      return;
+  const displaySets = instances.map(instance => {
+    if (instance.Modality === CHART_MODALITY) {
+      return makeChartDataDisplaySet(instance, sopClassUids);
     }
 
-    let displaySet;
-
-    if (isMultiFrame(instance)) {
-      displaySet = makeDisplaySet(appContext, [instance]);
-
-      displaySet.setAttributes({
-        sopClassUids,
-        isClip: true,
-        numImageFrames: instance.NumberOfFrames,
-        instanceNumber: instance.InstanceNumber,
-        acquisitionDatetime: instance.AcquisitionDateTime,
-      });
-      displaySets.push(displaySet);
-    } else if (isSingleImageModality(instance.Modality)) {
-      displaySet = makeDisplaySet(appContext, [instance]);
-      displaySet.setAttributes({
-        sopClassUids,
-        instanceNumber: instance.InstanceNumber,
-        acquisitionDatetime: instance.AcquisitionDateTime,
-      });
-      displaySets.push(displaySet);
-    } else {
-      stackableInstances.push(instance);
-    }
+    throw new Error('Unsupported modality');
   });
-
-  if (stackableInstances.length) {
-    const displaySet = makeDisplaySet(appContext, stackableInstances);
-    displaySet.setAttribute('studyInstanceUid', instances[0].StudyInstanceUID);
-    displaySet.setAttributes({
-      sopClassUids,
-    });
-    displaySets.push(displaySet);
-  }
 
   return displaySets;
 }
 
-function getSopClassHandlerModule(appContext) {
-  const getDisplaySetsFromSeries = instances => {
-    return _getDisplaySetsFromSeries(appContext, instances);
+function _getDateTimeStr() {
+  const now = new Date();
+  const date =
+    now.getFullYear() +
+    ('0' + now.getUTCMonth()).slice(-2) +
+    ('0' + now.getUTCDate()).slice(-2);
+  const time =
+    ('0' + now.getUTCHours()).slice(-2) +
+    ('0' + now.getUTCMinutes()).slice(-2) +
+    ('0' + now.getUTCSeconds()).slice(-2);
+
+  return { date, time };
+}
+
+function _getNewSeriesInstanceUid(seriesDate, seriesTime) {
+  return SegSeriesInstanceUidTemplate.replace('{date}', seriesDate)
+    .replace('{time}', seriesTime)
+    .replace(
+      '{id}',
+      `0000000000${Math.round(Math.random() * 1e12)}`.slice(-10)
+    );
+}
+
+function _getTimePointsDataByTagName(volume, timePointsTag) {
+  const uniqueTimePoints = volume.imageIds.reduce((timePoints, imageId) => {
+    const instance = DicomMetadataStore.getInstanceByImageId(imageId);
+    const timePointValue = instance[timePointsTag];
+
+    if (timePointValue !== undefined) {
+      timePoints.add(timePointValue);
+    }
+
+    return timePoints;
+  }, new Set());
+
+  return Array.from(uniqueTimePoints).sort();
+}
+
+function _convertTimePointsUnit(timePoints, timePointsUnit) {
+  const validUnits = ['ms', 's', 'm', 'h'];
+  const divisors = [1000, 60, 60];
+  const currentUnitIndex = validUnits.indexOf(timePointsUnit);
+  let divisor = 1;
+
+  if (currentUnitIndex !== -1) {
+    for (let i = currentUnitIndex; i < validUnits.length - 1; i++) {
+      const newDivisor = divisor * divisors[i];
+      const greaterThanDivisor = timePoints.every(
+        timePoint => timePoint > newDivisor
+      );
+
+      if (!greaterThanDivisor) {
+        break;
+      }
+
+      divisor = newDivisor;
+      timePointsUnit = validUnits[i + 1];
+    }
+
+    if (divisor > 1) {
+      timePoints = timePoints.map(timePoint => timePoint / divisor);
+    }
+  }
+
+  return { timePoints, timePointsUnit };
+}
+
+// It currently supports only one tag but a few other will be added soon
+// Supported 4D Tags
+//   (0018,1060) Trigger Time                   [NOK]
+//   (0018,0081) Echo Time                      [NOK]
+//   (0018,0086) Echo Number                    [NOK]
+//   (0020,0100) Temporal Position Identifier   [NOK]
+//   (0054,1300) FrameReferenceTime             [OK]
+function _getTimePointsData(volume) {
+  const timePointsTags = {
+    FrameReferenceTime: {
+      unit: 'ms',
+    },
   };
+
+  const timePointsTagNames = Object.keys(timePointsTags);
+  let timePoints;
+  let timePointsUnit;
+
+  for (let i = 0; i < timePointsTagNames.length; i++) {
+    const tagName = timePointsTagNames[i];
+    const curTimePoints = _getTimePointsDataByTagName(volume, tagName);
+
+    if (curTimePoints.length) {
+      timePoints = curTimePoints;
+      timePointsUnit = timePointsTags[tagName].unit;
+      break;
+    }
+  }
+
+  if (!timePoints.length) {
+    const concatTagNames = timePointsTagNames.join(', ');
+
+    throw new Error(
+      `Could not extract time points data for the following tags: ${concatTagNames}`
+    );
+  }
+
+  const convertedTimePoints = _convertTimePointsUnit(
+    timePoints,
+    timePointsUnit
+  );
+
+  timePoints = convertedTimePoints.timePoints;
+  timePointsUnit = convertedTimePoints.timePointsUnit;
+
+  return { timePoints, timePointsUnit };
+}
+
+function _getDisplaySetsFromSegmentation(segmentation, volumesTimePointsCache) {
+  const { representationData } = segmentation;
+  const { referencedVolumeId } = representationData[LABELMAP];
+  const referencedVolume = cs.cache.getVolume(referencedVolumeId);
+  const {
+    StudyInstanceUID,
+    StudyDescription,
+  } = DicomMetadataStore.getInstanceByImageId(referencedVolume.imageIds[0]);
+
+  const segPixelDataInTime = csToolsUtils.dynamicVolume.getDataInTime(
+    referencedVolume,
+    {
+      maskVolumeId: segmentation.id,
+    }
+  ) as number[][];
+
+  const pixelCount = segPixelDataInTime.length;
+
+  if (pixelCount === 0) {
+    return [];
+  }
+
+  let timePointsData = volumesTimePointsCache.get(referencedVolume);
+
+  if (!timePointsData) {
+    timePointsData = _getTimePointsData(referencedVolume);
+    volumesTimePointsCache.set(referencedVolume, timePointsData);
+  }
+
+  const { timePoints, timePointsUnit } = timePointsData;
+
+  if (timePoints.length !== segPixelDataInTime[0].length) {
+    throw new Error('Invalid number of time points returned');
+  }
+
+  const timepointsCount = timePoints.length;
+  const chartSeriesData = new Array(timepointsCount);
+
+  for (let i = 0; i < timepointsCount; i++) {
+    const average = segPixelDataInTime.reduce(
+      (acc, cur) => acc + cur[i] / pixelCount,
+      0
+    );
+
+    chartSeriesData[i] = [timePoints[i], average];
+  }
+
+  return {
+    StudyInstanceUID,
+    StudyDescription,
+    chartData: {
+      series: {
+        label: segmentation.label,
+        points: chartSeriesData,
+      },
+      axis: {
+        x: {
+          label: `Time (${timePointsUnit})`,
+        },
+        y: {
+          label: `Vl (Bq/ml)`,
+        },
+      },
+    },
+  };
+}
+
+function _getDisplaySetsFromSegmentations(segmentations) {
+  if (!segmentations.length) {
+    return;
+  }
+
+  const volumesTimePointsCache = new WeakMap();
+  const segmentationsData = segmentations.map(segmentation =>
+    _getDisplaySetsFromSegmentation(segmentation, volumesTimePointsCache)
+  );
+
+  const { date: seriesDate, time: seriesTime } = _getDateTimeStr();
+  const seriesInstanceUid = _getNewSeriesInstanceUid(seriesDate, seriesTime);
+
+  const instance = {
+    SOPClassUID: SegDataSOPClassUid,
+    Modality: CHART_MODALITY,
+    SeriesDate: seriesDate,
+    SeriesTime: seriesTime,
+    SeriesInstanceUID: seriesInstanceUid,
+    StudyInstanceUID: segmentationsData[0].StudyInstanceUID,
+    StudyDescription: segmentationsData[0].StudyDescription,
+    SeriesNumber: 100,
+    SeriesDescription: 'Segmentation chart series data',
+    chartData: {
+      series: segmentationsData.reduce(
+        (allSeries, curSegData) => [...allSeries, curSegData.chartData.series],
+        []
+      ),
+      axis: { ...segmentationsData[0].chartData.axis },
+    },
+  };
+
+  const seriesMetadata = {
+    StudyInstanceUID: instance.StudyInstanceUID,
+    StudyDescription: instance.StudyDescription,
+    SeriesInstanceUID: instance.SeriesInstanceUID,
+    SeriesDescription: instance.SeriesDescription,
+    SeriesNumber: instance.SeriesNumber,
+    SeriesTime: instance.SeriesTime,
+    SOPClassUID: instance.SOPClassUID,
+    Modality: instance.Modality,
+  };
+
+  DicomMetadataStore.addSeriesMetadata([seriesMetadata], true);
+  DicomMetadataStore.addInstances([instance], true);
+}
+
+function _updateSegmentationsDisplaySets(appContext) {
+  console.log('>>>>> updateSegmentationsDisplaySets');
+
+  const { servicesManager } = appContext;
+  const { segmentationService, displaySetService } = servicesManager.services;
+
+  const segmentations = segmentationService.getSegmentations();
+  const displaySets = _getDisplaySetsFromSegmentations(segmentations);
+
+  // eslint-disable-next-line
+  console.log('>>>>> updateSegmentationsDisplaySets :: displaySets ::', displaySets);
+
+  // displaySetService.makeDisplaySets(instances)
+  // displaySetService.addDisplaySets();
+}
+
+function getSopClassHandlerModule(appContext) {
+  const getDisplaySetsFromSeries = instances =>
+    _getDisplaySetsFromSeries(appContext, instances);
+  const updateSegmentationsDisplaySets = () =>
+    _updateSegmentationsDisplaySets(appContext);
 
   return [
     {
       name: SOPClassHandlerName,
       sopClassUids,
       getDisplaySetsFromSeries,
+      updateSegmentationsDisplaySets,
     },
   ];
 }

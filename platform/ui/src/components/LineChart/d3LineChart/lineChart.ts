@@ -1,6 +1,8 @@
-import { scaleLinear } from 'd3-scale';
-import { line } from 'd3-shape';
-import { axisBottom, axisLeft } from 'd3-axis';
+import * as d3 from 'd3';
+import { rollup } from 'd3';
+// import { scaleLinear } from 'd3-scale';
+// import { line } from 'd3-shape';
+// import { axisBottom, axisLeft } from 'd3-axis';
 import { max } from 'd3-array';
 
 import chart from './chart';
@@ -45,12 +47,175 @@ const MARGIN = { top: 20, right: 50, bottom: 50, left: 50 };
  * It creates a svg chart containing lines, dots, axis, labels
  *
  * @param {object} d3SVGRef svg content reference to append chart
- * @param {function} movingPointsCallback callback method to be called once p/g points are changed
  * @param {Object<string, TimecoursePointDef>} axis definition of axis
  * @param {object} points list of points to be created
- * @param {number} [peekIndex] index related to peek point
- * @param {number} [glomerularIndex] index related to peek point
- * @param {number} defaultTimecourseInterval interval for adding new p/g point
+ * @param {number} width width for whole content including lines, dots, axis, labels
+ * @param {number} height height for whole content including lines, dots, axis, labels
+ * @param {boolean} showAxisLabels flag to display labels or not
+ *
+ * @modifies {d3SVGRef}
+ */
+const addLineChartNode2 = (d3SVGRef, axis, series, width, height) => {
+  let points = [];
+
+  const { x: XAxis, y: YAxis } = axis;
+  const marginTop = 20;
+  const marginRight = 20;
+  const marginBottom = 30;
+  const marginLeft = 30;
+
+  console.clear();
+
+  series.forEach(curSeries => {
+    points = points.concat(
+      curSeries.points.map(point => {
+        // console.log('>>>>> point[XAxis.indexRef] ::', point[XAxis.indexRef]);
+        // console.log('>>>>> point[XAxis.indexRef] ::', x(point[XAxis.indexRef]));
+        // console.log('>>>>> point[YAxis.indexRef] ::', point[YAxis.indexRef]);
+        // console.log('>>>>> point[YAxis.indexRef] ::', y(point[YAxis.indexRef]));
+
+        return [point[XAxis.indexRef], point[YAxis.indexRef], curSeries.label];
+      })
+    );
+  });
+
+  console.log('>>>>> points ::', [...points]);
+
+  console.log(
+    '>>>>> d3.extent(points, p => p[0]) ::',
+    d3.extent(points, p => {
+      console.log(p);
+      return p[0];
+    })
+  );
+
+  // Create the positional scales.
+  const x = d3
+    .scaleLinear()
+    .domain(d3.extent(points, p => p[0]))
+    .range([marginLeft, width - marginRight]);
+
+  const y = d3
+    .scaleLinear()
+    .domain(d3.extent(points, p => p[1]))
+    .range([height - marginBottom, marginTop]);
+
+  points = points.map(p => [x(p[0]), y(p[1]), p[2]]);
+  console.log('>>>>> points ::', [...points]);
+
+  const groups = rollup(
+    points,
+    v => Object.assign(v, { z: v[0][2] }),
+    d => d[2]
+  );
+  console.log('>>>>> groups :: ', groups);
+
+  // Create the SVG container.
+  // const svg = d3.create("svg")
+  d3SVGRef
+    .attr('width', width)
+    .attr('height', height)
+    .attr('viewBox', [0, 0, width, height])
+    .attr(
+      'style',
+      'max-width: 100%; height: auto; overflow: visible; font: 10px sans-serif; background-color: #999'
+    );
+
+  // Add the horizontal axis.
+  d3SVGRef
+    .append('g')
+    .attr('transform', `translate(0,${height - marginBottom})`)
+    .call(
+      d3
+        .axisBottom(x)
+        .ticks(width / 80)
+        .tickSizeOuter(0)
+    );
+
+  // Add the vertical axis.
+  d3SVGRef
+    .append('g')
+    .attr('transform', `translate(${marginLeft},0)`)
+    .call(d3.axisLeft(y))
+    .call(g => g.select('.domain').remove())
+    .call(g =>
+      g
+        .append('text')
+        .attr('x', -marginLeft)
+        .attr('y', 10)
+        .attr('fill', 'currentColor')
+        .attr('text-anchor', 'start')
+        .text('↑ Unemployment (%)')
+    );
+
+  // Draw the lines.
+  const line = d3.line();
+  const path = d3SVGRef
+    .append('g')
+    .attr('fill', 'none')
+    .attr('stroke', 'steelblue')
+    .attr('stroke-width', 1.5)
+    .attr('stroke-linejoin', 'round')
+    .attr('stroke-linecap', 'round')
+    .selectAll('path')
+    .data(groups.values())
+    .join('path')
+    .style('mix-blend-mode', 'multiply')
+    .attr('d', line);
+
+  // Add an invisible layer for the interactive tip.
+  const dot = d3SVGRef.append('g').attr('display', 'none');
+
+  dot.append('circle').attr('r', 2.5);
+
+  dot
+    .append('text')
+    .attr('text-anchor', 'middle')
+    .attr('y', -8);
+
+  d3SVGRef
+    .on('pointerenter', pointerentered)
+    .on('pointermove', pointermoved)
+    .on('pointerleave', pointerleft)
+    .on('touchstart', event => event.preventDefault());
+
+  return d3SVGRef.node();
+
+  // When the pointer moves, find the closest point, update the interactive tip, and highlight
+  // the corresponding line. Note: we don't actually use Voronoi here, since an exhaustive search
+  // is fast enough.
+  function pointermoved(event) {
+    const [xm, ym] = d3.pointer(event);
+    const i = d3.leastIndex(points, ([x, y]) => Math.hypot(x - xm, y - ym));
+    const [x, y, k] = points[i];
+    path
+      .style('stroke', ({ z }) => (z === k ? null : '#ddd'))
+      .filter(({ z }) => z === k)
+      .raise();
+    dot.attr('transform', `translate(${x},${y})`);
+    dot.select('text').text(k);
+    d3SVGRef.property('value', points[i]).dispatch('input', { bubbles: true });
+  }
+
+  function pointerentered() {
+    path.style('mix-blend-mode', null).style('stroke', '#ddd');
+    dot.attr('display', null);
+  }
+
+  function pointerleft() {
+    path.style('mix-blend-mode', 'multiply').style('stroke', null);
+    dot.attr('display', 'none');
+    d3SVGRef.node().value = null;
+    d3SVGRef.dispatch('input', { bubbles: true });
+  }
+};
+
+/**
+ * It creates a svg chart containing lines, dots, axis, labels
+ *
+ * @param {object} d3SVGRef svg content reference to append chart
+ * @param {Object<string, TimecoursePointDef>} axis definition of axis
+ * @param {object} points list of points to be created
  * @param {number} width width for whole content including lines, dots, axis, labels
  * @param {number} height height for whole content including lines, dots, axis, labels
  * @param {boolean} showAxisLabels flag to display labels or not
@@ -59,62 +224,63 @@ const MARGIN = { top: 20, right: 50, bottom: 50, left: 50 };
  */
 const addLineChartNode = (
   d3SVGRef,
-  movingPointsCallback,
   axis,
-  points = [],
-  peekIndex,
-  glomerularIndex,
+  series,
   width,
   height,
   showAxisLabels = true,
   showAxisGrid = false,
   transparentChartBackground = false
 ) => {
+  console.clear();
+
   const _width = width - MARGIN.left - MARGIN.right;
   const _height = height - MARGIN.top - MARGIN.bottom;
-
   const { x: XAxis, y: YAxis } = axis;
+  // const points = series[0].points;
+  let points = [];
 
-  function createAxisScale(domainBottom, domainUpper, rangeBottom, rangeUpper) {
-    return scaleLinear()
-      .domain([domainBottom, domainUpper * 1.05])
+  function createAxisScale(points, pointsIndex, rangeBottom, rangeUpper) {
+    const range = d3.extent(points, p => p[pointsIndex]);
+
+    return d3
+      .scaleLinear()
+      .domain([range[0], range[1] * 1.05])
       .range([rangeBottom, rangeUpper]);
   }
 
-  const maxX = _getMaxValue(points, XAxis.indexRef);
-  const maxY = _getMaxValue(points, YAxis.indexRef);
+  series.forEach(curSeries => {
+    points = points.concat(
+      curSeries.points.map(point => [
+        point[XAxis.indexRef],
+        point[YAxis.indexRef],
+        curSeries.label,
+      ])
+    );
+  });
 
-  if (!maxX || !maxY) {
-    return;
-  }
-
-  const xAxisScale = createAxisScale(0, maxX, 0, _width);
-  const yAxisScale = createAxisScale(0, maxY, _height, 0);
+  // const maxX = _getMaxValue(points, 0);
+  // const maxY = _getMaxValue(points, 1);
+  // const xAxisScale = createAxisScale(0, maxX, 0, _width);
+  // const yAxisScale = createAxisScale(0, maxY, _height, 0);
+  const xAxisScale = createAxisScale(points, 0, 0, _width);
+  const yAxisScale = createAxisScale(points, 1, _height, 0);
 
   const parseXPoint = axisScale => (point, index) => {
-    return (axisScale || xAxisScale)(points[index][XAxis.indexRef]);
+    return (axisScale || xAxisScale)(points[index][0]);
   };
 
   const parseYPoint = axisScale => point => {
     return (axisScale || yAxisScale)(point.y);
   };
 
-  // create line
-  const _line = line()
-    .x(parseXPoint(xAxisScale))
-    .y(parseYPoint(yAxisScale));
-
-  const dataset = points.map(point => {
-    return { y: point[YAxis.indexRef] };
-  });
-
   // Remove old D3 elements
   chart.removeContents(d3SVGRef);
 
   const chartWrapper = chart.container.addNode(
     d3SVGRef,
-    _width + MARGIN.left + MARGIN.right,
-    _height + MARGIN.top + MARGIN.bottom,
+    width,
+    height,
     MARGIN.left,
     MARGIN.top
   );
@@ -126,8 +292,11 @@ const addLineChartNode = (
     _height,
     transparentChartBackground
   );
+
   // call the x axis in a group tag
-  const xAxisGenerator = axisBottom(xAxisScale);
+  const xAxisGenerator = d3.axisBottom(xAxisScale);
+
+  console.log('>>>>> xAxisGenerator ::', xAxisGenerator);
 
   if (showAxisGrid) {
     xAxisGenerator.tickSize(-_height).tickPadding(10);
@@ -145,7 +314,7 @@ const addLineChartNode = (
     undefined,
     showAxisGrid
   );
-  const yAxisGenerator = axisLeft(yAxisScale);
+  const yAxisGenerator = d3.axisLeft(yAxisScale);
 
   if (showAxisGrid) {
     yAxisGenerator.tickSize(-_width).tickPadding(10);
@@ -167,50 +336,83 @@ const addLineChartNode = (
     ],
     showAxisGrid
   );
+
+  // create line
+  // const line = d3
+  //   .line()
+  //   .x(parseXPoint(xAxisScale))
+  //   .y(parseYPoint(yAxisScale));
+
+  // const dataset = points.map(point => {
+  //   return { y: point[1] };
+  // });
+
   // add line chart
-  chart.lines.addNode(chartWrapper, dataset, _line);
-  // add chart points
-  const gDots = chart.points.addNode(
-    chartWrapper,
-    dataset,
-    parseXPoint(xAxisScale),
-    parseYPoint(yAxisScale)
+  // chart.lines.addNode(chartWrapper, dataset, line);
+
+  const points2 = points.slice();
+  // const points2 = points.map(p => [xAxisScale(p[0]), yAxisScale(p[1]), p[2]]);
+
+  const groups = rollup(
+    points2,
+    v => Object.assign(v, { z: v[0][2] }),
+    d => d[2]
   );
 
-  if (peekIndex >= 0 && glomerularIndex >= 0) {
-    const gDotsNodes = gDots.nodes();
-    const gPeekPoint = gDotsNodes[peekIndex];
-    const gGlomerularPoint = gDotsNodes[glomerularIndex];
+  console.log('>>>>> groups ::', groups);
 
-    const _interactionDataset = chart.interactionPoint.buildDataset(
-      gPeekPoint,
-      peekIndex,
-      gGlomerularPoint,
-      glomerularIndex,
-      parseXPoint,
-      parseYPoint,
-      xAxisScale,
-      yAxisScale
+  const datasets = [];
+
+  Array.from(groups.values()).forEach((group, seriesIndex) => {
+    const line = d3
+      .line()
+      .x(parseXPoint(xAxisScale))
+      .y(parseYPoint(yAxisScale));
+
+    const dataset = group.map(point => {
+      return { y: point[1] };
+    });
+
+    const seriesContainer = chartWrapper
+      .append('g')
+      .attr('id', `series_${seriesIndex}`);
+
+    chart.lines.addNode(seriesContainer, dataset, line);
+
+    // add chart points
+    chart.points.addNode(
+      seriesContainer,
+      dataset,
+      parseXPoint(xAxisScale),
+      parseYPoint(yAxisScale)
     );
 
-    // create line
-    const _interactionLine = line()
-      .x(chart.interactionPoint.parseXPoint(parseXPoint, xAxisScale))
-      .y(chart.interactionPoint.parseYPoint(parseYPoint, yAxisScale));
-    // set interaction points
-    chart.interactionPoint.addNode(
-      chartWrapper,
-      gPeekPoint,
-      gGlomerularPoint,
-      _interactionDataset,
-      _interactionLine
-    );
-  }
+    // datasets = datasets.concat(dataset);
+    datasets.push(dataset);
+  });
+
+  // const line = d3.line();
+  // .x(parseXPoint(xAxisScale))
+  // .y(parseYPoint(yAxisScale));
+
+  // const path = chartWrapper
+  //   .append('g')
+  //   .attr('fill', 'none')
+  //   .attr('stroke', 'red')
+  //   .attr('stroke-width', 1.5)
+  //   .attr('stroke-linejoin', 'round')
+  //   .attr('stroke-linecap', 'round')
+  //   .selectAll('path')
+  //   .data(groups.values())
+  //   .join('path')
+  //   // .style('mix-blend-mode', 'multiply')
+  //   .attr('d', line);
+
+  // return chartWrapper;
 
   // bind events
   events.bindMouseEvents(
     chartWrapper,
-    points,
     gXAxis,
     gYAxis,
     xAxisScale,
@@ -219,17 +421,10 @@ const addLineChartNode = (
     yAxisGenerator,
     parseXPoint,
     parseYPoint,
-    dataset,
-    peekIndex,
-    glomerularIndex,
-    movingPointsCallback
+    datasets
   );
 
   return chartWrapper;
 };
 
-const defaultTimecourseInterval = value => {
-  return chart.interactionPoint.defaultInterval(value);
-};
-
-export { addLineChartNode, resetZoom, defaultTimecourseInterval };
+export { addLineChartNode, resetZoom };

@@ -1,15 +1,6 @@
-import * as cs from '@cornerstonejs/core';
-import * as csTools from '@cornerstonejs/tools';
-
-const { utilities: csToolsUtils } = csTools;
-const LABELMAP = csTools.Enums.SegmentationRepresentations.Labelmap;
-
-console.log(
-  '>>>>> csToolsUtils.dynamicVolume.getDataInTime ::',
-  csToolsUtils.dynamicVolume.getDataInTime
-);
-
 const dynamicVolume = {
+  sopClassHandler:
+    '@ohif/extension-cornerstone-dynamic-volume.sopClassHandlerModule.dynamic-volume',
   leftPanel:
     '@ohif/extension-cornerstone-dynamic-volume.panelModule.dynamic-volume',
   rightPanel:
@@ -79,45 +70,12 @@ const workflowSettings = {
         stageId: 'kinectAnalysis',
       },
 
-      onBeforeActivate: ({ servicesManager }) => {
-        const {
-          segmentationService,
-          displaySetService,
-        } = servicesManager.services;
-
-        const segmentations = segmentationService.getSegmentations();
-        console.log(
-          '>>>>> onBeforeActivate :: segmentations ::',
-          segmentations
+      onBeforeActivate: ({ extensionManager, servicesManager }) => {
+        const sopClassHandler = extensionManager.getModuleEntry(
+          dynamicVolume.sopClassHandler
         );
 
-        // const volumes = segmentations.map(segmentation =>
-        //   cs.cache.getVolume(segmentation.id)
-        // );
-
-        (window as any).cs = cs;
-
-        const segmentationData = segmentations.map(segmentation => {
-          debugger;
-
-          const { representationData } = segmentation;
-          const {
-            // volumeId: segVolumeId,
-            referencedVolumeId,
-          } = representationData[LABELMAP];
-          const referencedVolume = cs.cache.getVolume(referencedVolumeId);
-
-          return csToolsUtils.dynamicVolume.getDataInTime(referencedVolume, {
-            maskVolumeId: segmentation.id,
-          });
-        });
-
-        console.log(
-          '>>>>> onBeforeActivate :: segmentationData ::',
-          segmentationData
-        );
-
-        // displaySetService.makeDisplaySets(instances)
+        sopClassHandler.updateSegmentationsDisplaySets();
       },
       // onAfterActivate: () => console.log('>>>>> onAfterActivate'),
       // onBeforeInactivate: () => console.log('>>>>> onBeforeInactivate'),
