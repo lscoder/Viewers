@@ -117,6 +117,54 @@ function createDicomWebApi(dicomWebConfig, userAuthenticationService) {
     ? new StaticWadoClient(wadoConfig)
     : new api.DICOMwebClient(wadoConfig);
 
+  const addDevChartSeries = () => {
+    const chartSeriesMetadata = {
+      StudyInstanceUID:
+        '1.3.6.1.4.1.12842.1.1.14.3.20220915.105557.468.2963630849',
+      StudyDescription: 'General Static Scan + CT',
+      SeriesInstanceUID:
+        '1.3.6.1.4.1.12842.1.1.14.4.20230721.113912.435.3092030853',
+      SeriesDescription: 'Segmentation chart series data',
+      SeriesNumber: 100,
+      SeriesTime: '113912',
+      SOPClassUID: '1.9.451.13215.7.3.2.7.6.1',
+      Modality: 'CHT',
+    };
+
+    const chartInstance = {
+      SOPClassUID: '1.9.451.13215.7.3.2.7.6.1',
+      Modality: 'CHT',
+      SeriesDate: '20230721',
+      SeriesTime: '113912',
+      SeriesInstanceUID:
+        '1.3.6.1.4.1.12842.1.1.14.4.20230721.113912.435.3092030853',
+      StudyInstanceUID:
+        '1.3.6.1.4.1.12842.1.1.14.3.20220915.105557.468.2963630849',
+      StudyDescription: 'General Static Scan + CT',
+      SeriesNumber: 100,
+      SeriesDescription: 'Segmentation chart series data',
+      chartData: {
+        series: [
+          [
+            [3150000, 25.575149936509195],
+            [3450000, 25.216475752282776],
+          ],
+        ],
+        axis: {
+          x: {
+            label: 'Time (ms)',
+          },
+          y: {
+            label: 'Vl (Bq/ml)',
+          },
+        },
+      },
+    };
+
+    DicomMetadataStore.addSeriesMetadata([chartSeriesMetadata], true);
+    DicomMetadataStore.addInstances([chartInstance], true);
+  };
+
   const implementation = {
     initialize: ({ params, query }) => {
       const { StudyInstanceUIDs: paramsStudyInstanceUIDs } = params;
@@ -360,6 +408,8 @@ function createDicomWebApi(dicomWebConfig, userAuthenticationService) {
           madeInClient
         )
       );
+
+      // addDevChartSeries();
     },
 
     _retrieveSeriesMetadataAsync: async (
