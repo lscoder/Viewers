@@ -53,7 +53,7 @@ const _formatAxisLabel = ({ label, unit }) => {
 const _addChartContainer = (root, width, height, translateX, translateY) => {
   root
     .append('rect')
-    // .attr('class', 'background')
+    .attr('class', 'background')
     .attr('width', width)
     .attr('height', height);
 
@@ -63,6 +63,57 @@ const _addChartContainer = (root, width, height, translateX, translateY) => {
     .attr('height', height)
     .append('g')
     .attr('transform', 'translate(' + translateX + ',' + translateY + ')');
+};
+
+const _addLegend = (root, width, height, posX, posY) => {
+  const legendContainer = root
+    .append('g')
+    .attr('class', 'legend')
+    .attr('transform', 'translate(' + posX + ',' + posY + ')');
+
+  legendContainer
+    .append('rect')
+    .attr('class', 'legend-background')
+    .attr('width', width)
+    .attr('height', height);
+
+  return legendContainer;
+};
+
+const _setLegendLabels = (
+  root,
+  labels,
+  colors,
+  itemHeight,
+  itemWidth,
+  textEllipses
+) => {
+  const yOffset = itemHeight / 2;
+  const textLeft = 20;
+
+  // Add one dot in the legend for each
+  root
+    .selectAll('labelDots')
+    .data(labels)
+    .enter()
+    .append('circle')
+    .attr('cx', 10)
+    .attr('cy', (_d, i) => yOffset + i * itemHeight)
+    .attr('r', 5)
+    .style('fill', (_d, i) => colors[i]);
+
+  root
+    .selectAll('labelText')
+    .data(labels)
+    .enter()
+    .append('text')
+    .attr('x', textLeft)
+    .attr('y', (_d, i) => yOffset + i * itemHeight)
+    .style('fill', (_d, i) => colors[i])
+    .append('tspan')
+    .style('alignment-baseline', 'middle')
+    .text(d => d)
+    .each(textEllipses(itemWidth - textLeft, 1));
 };
 
 /**
@@ -186,6 +237,14 @@ const _addChartClipPath = (
     .classed('transparent', transparent);
 };
 
+const _addSeries = (root, seriesIndex, style) => {
+  return root
+    .append('g')
+    .attr('id', `series_${seriesIndex}`)
+    .attr('class', 'series')
+    .attr('stroke', style.color || '#ffffff');
+};
+
 /**
  * It appends line chart svg element to root element
  *
@@ -298,6 +357,9 @@ const chart = {
     addNode: _addAxis,
     scaleGraphics: _scaleAxisGraphics,
   },
+  series: {
+    addNode: _addSeries,
+  },
   lines: {
     addNode: _addLine,
     updateNode: _updateLine,
@@ -312,6 +374,11 @@ const chart = {
   },
   container: {
     addNode: _addChartContainer,
+  },
+  legend: {
+    addNode: _addLegend,
+    // addItem: _addLegendItem,
+    setLabels: _setLegendLabels,
   },
   removeContents: _removeChartContents,
 };

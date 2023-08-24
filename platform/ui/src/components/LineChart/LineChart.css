@@ -30,29 +30,12 @@
 }
 
 .LineChart svg .line {
-  stroke: #fff;
   stroke-width: 1px;
   fill: none;
 }
 
-.LineChart svg .dot {
-  stroke: #fff;
-  fill: #fff;
-}
 
-/* .LineChart svg .dot .interaction.peek {
-  fill: #f00;
+.LineChart svg .legend .legend-background {
+  fill: none;
+  stroke: #383f42;
 }
-
-.LineChart svg .dot .interaction.glomerular {
-  fill: #f00;
-}
-
-.LineChart svg .dot .interaction.line {
-  fill: #f00;
-}
-
-.LineChart svg .dot .interaction.dot {
-  stroke: #f00;
-  stroke-width: 3px;
-} */

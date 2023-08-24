@@ -17,10 +17,11 @@ const LineChart = ({
   width: widthProp,
   height: heightProp,
   axis,
-  // points,
   series,
   showAxisLabels,
   showAxisGrid,
+  showLegend,
+  legendWidth,
   transparentChartBackground,
   containerClassName,
   chartContainerClassName,
@@ -30,6 +31,7 @@ const LineChart = ({
   height: number;
   showAxisGrid: boolean;
   showAxisLabels: boolean;
+  showLegend: boolean;
   transparentChartBackground: boolean;
   containerClassName: string;
   chartContainerClassName: string;
@@ -63,50 +65,49 @@ const LineChart = ({
 
     const testSeries = [
       {
-        label: 'series 1',
+        label: 'series 1 Lorem Ipsum',
+        // color: '#f00',
         points: [
           [0, 500],
-          [10, 700],
+          [10, 500],
           [20, 300],
         ],
       },
       {
         label: 'series 2',
+        // color: '#0f0',
         points: [
           [0, 800],
           [10, 600],
           [20, 1000],
         ],
       },
-      // {
-      //   label: 'series 3',
-      //   points: [
-      //     [0, 250],
-      //     [10, 900],
-      //     [20, 100],
-      //   ],
-      // },
+      {
+        label: 'series 3',
+        // color: '#00f',
+        points: [
+          [0, 250],
+          [10, 100],
+          [20, 250],
+        ],
+      },
     ];
 
-    testSeries.forEach((curSeries, i) => {
-      console.log('>>>>> curSeries ::', curSeries);
-    });
-
-    lineChart.addLineChartNode(
-      d3SVGContainer,
+    lineChart.addLineChartNode({
+      d3SVGRef: d3SVGContainer,
       axis,
-      // points,
-      series,
+      series, // : testSeries,
       width,
       height,
       showAxisLabels,
       showAxisGrid,
-      transparentChartBackground
-    );
+      showLegend,
+      legendWidth,
+      transparentChartBackground,
+    });
   }, [
     d3SVGContainer,
     axis,
-    // points,
     series,
     width,
     height,
@@ -142,6 +143,8 @@ const LineChart = ({
 LineChart.defaultProps = {
   showAxisLabels: true,
   showAxisGrid: true,
+  showLegend: false,
+  legendWidth: 120,
   transparentChartBackground: false,
 };
 
@@ -149,10 +152,10 @@ LineChart.propTypes = {
   title: PropTypes.string,
   width: PropTypes.number,
   height: PropTypes.number,
-  // axis: PropTypes.shape({})
-  // points: PropTypes.
   showAxisLabels: PropTypes.bool,
   showAxisGrid: PropTypes.bool,
+  showLegend: PropTypes.bool,
+  legendWidth: PropTypes.number,
   transparentChartBackground: PropTypes.bool,
   containerClassName: PropTypes.string,
   chartContainerClassName: PropTypes.string,

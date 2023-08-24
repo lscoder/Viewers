@@ -31,11 +31,6 @@ const getViewportModule = ({
     const displaySet = displaySets[0];
     const { axis: chartAxis, series: chartSeries } = displaySet.chartData;
 
-    debugger;
-    console.log('>>>>> LineChartViewport :: displaySets', displaySets);
-    console.log('>>>>> chartSeries ::', chartSeries);
-
-    // const series = displaySet.chartData.[0];
     const testPoints = [
       [0, 607.54],
       [1, 648.28],
@@ -93,6 +88,8 @@ const getViewportModule = ({
       <LineChart
         // width={600}
         // height={400}
+        showLegend={true}
+        legendWidth={150}
         axis={{
           x: {
             label: chartAxis.x.label,
