@@ -245,8 +245,22 @@ class CornerstoneCacheService {
         const { userAuthenticationService } = this.servicesManager.services;
         const headers = userAuthenticationService.getAuthorizationHeader();
 
+        // Default volumeData that can be overriden by any data returned by `displaySet.load()`
+        let displaySetVolumeData = {
+          studyInstanceUID: displaySet.StudyInstanceUID,
+          displaySetInstanceUID: displaySet.displaySetInstanceUID,
+        };
+
         try {
-          await displaySet.load({ headers });
+          // Some dynamically created dataset may still be loaded as a normal
+          // volume and it may return the volumeData to be loaded on a viewport
+          const loadResult = await displaySet.load({ headers });
+
+          // Checks if `volumeData` exists because some `load()` calls may return
+          // different data such as ParametricMap that returns an ImageVolume.
+          if (loadResult?.volumeData) {
+            displaySetVolumeData = loadResult?.volumeData;
+          }
         } catch (e) {
           const { uiNotificationService } = this.servicesManager.services;
           uiNotificationService.show({
@@ -260,10 +274,7 @@ class CornerstoneCacheService {
         // Parametric maps have a `load` method but it should not be loaded in the
         // same way as SEG and RTSTRUCT but like a normal volume
         if (!isParametricMap) {
-          volumeData.push({
-            studyInstanceUID: displaySet.StudyInstanceUID,
-            displaySetInstanceUID: displaySet.displaySetInstanceUID,
-          });
+          volumeData.push(displaySetVolumeData);
 
           // Todo: do some cache check and empty the cache if needed
           continue;
